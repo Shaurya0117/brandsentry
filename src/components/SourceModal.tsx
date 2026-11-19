@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { BookOpen, CheckCircle, ShieldAlert, X, ExternalLink } from 'lucide-react';
+import React from 'react';
+import { BookOpen, X, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 export interface SourceDetail {
@@ -24,7 +24,6 @@ export default function SourceModal({ sourceCode, onClose }: SourceModalProps) {
     async function fetchSource() {
       setLoading(true);
       try {
-        // Fetch guideline or fact
         const gRes = await fetch(`/api/guidelines`);
         const fRes = await fetch(`/api/facts`);
         const tRes = await fetch(`/api/terms`);
@@ -93,60 +92,60 @@ export default function SourceModal({ sourceCode, onClose }: SourceModalProps) {
   }, [sourceCode]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+      <div className="bg-[#111113] border border-white/[0.12] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative top-highlight">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
           aria-label="Close modal"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-800/80 flex items-center justify-center text-cyan-400">
-            <BookOpen className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-white/[0.1] flex items-center justify-center text-zinc-200">
+            <BookOpen className="w-4 h-4 text-zinc-300" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-semibold text-cyan-400">Cited Knowledge Base Reference</span>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Cited Knowledge Standard</span>
             </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">{sourceCode}</h3>
+            <h3 className="text-base font-semibold text-zinc-100 tracking-tight font-mono">{sourceCode}</h3>
           </div>
         </div>
 
         {loading ? (
           <div className="py-8 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/60" />
           </div>
         ) : detail ? (
-          <div className="space-y-4">
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+          <div className="space-y-3.5">
+            <div className="bg-[#09090b] border border-white/[0.06] rounded-xl p-3.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
                 Category
               </span>
-              <p className="text-sm font-medium text-slate-200">{detail.category || 'Standard'}</p>
+              <p className="text-xs font-medium text-zinc-200">{detail.category || 'Standard'}</p>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+            <div className="bg-[#09090b] border border-white/[0.06] rounded-xl p-3.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
                 Authorized Governance Statement
               </span>
-              <p className="text-sm text-slate-300 leading-relaxed">{detail.text}</p>
+              <p className="text-xs text-zinc-300 leading-relaxed font-sans">{detail.text}</p>
             </div>
 
-            <div className="pt-2 flex justify-between items-center text-xs text-slate-400">
+            <div className="pt-2 flex justify-between items-center text-xs text-zinc-400">
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 text-cyan-400 hover:underline"
+                className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors"
                 onClick={onClose}
               >
-                <span>View in Knowledge Base</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Knowledge Base</span>
+                <ExternalLink className="w-3 h-3" />
               </Link>
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors"
+                className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-zinc-200 text-xs font-medium transition-colors"
               >
                 Close
               </button>

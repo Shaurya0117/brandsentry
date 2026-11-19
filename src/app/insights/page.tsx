@@ -109,8 +109,8 @@ ${data.guidelineHealth
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto" />
-        <p className="text-slate-400 text-sm">Aggregating brand governance intelligence...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60 mx-auto" />
+        <p className="text-zinc-500 text-xs">Aggregating brand governance intelligence...</p>
       </div>
     );
   }
@@ -118,18 +118,18 @@ ${data.guidelineHealth
   if (!data) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <p className="text-slate-400">Failed to load insights.</p>
+        <p className="text-zinc-400 text-xs">Failed to load insights.</p>
       </div>
     );
   }
 
-  const categoryColors: Record<string, { bg: string; text: string; bar: string }> = {
-    tone: { bg: 'bg-indigo-950', text: 'text-indigo-400', bar: 'bg-indigo-500' },
-    terminology: { bg: 'bg-purple-950', text: 'text-purple-400', bar: 'bg-purple-500' },
-    fact: { bg: 'bg-cyan-950', text: 'text-cyan-400', bar: 'bg-cyan-500' },
-    claim: { bg: 'bg-rose-950', text: 'text-rose-400', bar: 'bg-rose-500' },
-    visual: { bg: 'bg-amber-950', text: 'text-amber-400', bar: 'bg-amber-500' },
-    accessibility: { bg: 'bg-emerald-950', text: 'text-emerald-400', bar: 'bg-emerald-500' },
+  const categoryBars: Record<string, string> = {
+    tone: 'bg-indigo-400',
+    terminology: 'bg-purple-400',
+    fact: 'bg-cyan-400',
+    claim: 'bg-rose-400',
+    visual: 'bg-amber-400',
+    accessibility: 'bg-emerald-400',
   };
 
   const maxCategoryCount = Math.max(...Object.values(data.categoryCounts), 1);
@@ -140,28 +140,28 @@ ${data.guidelineHealth
     : data.guidelineHealth.filter((gh) => gh.is_unclear);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-violet-950 text-violet-400 border border-violet-800/80">
-              <BarChart3 className="w-4 h-4" />
+            <span className="p-1 rounded-md bg-white/[0.04] text-zinc-300 border border-white/[0.08]">
+              <BarChart3 className="w-3.5 h-3.5 text-zinc-300" />
             </span>
-            <span className="text-xs uppercase font-semibold tracking-wider text-violet-400">
-              Governance Analytics & Diagnostic Health
+            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+              Governance Analytics & Diagnostics
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">Brand Health & Compliance Insights</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100 mt-1 tracking-tight">Brand Health & Compliance Insights</h1>
+          <p className="text-xs text-zinc-400">
             Identify systematic brand drift, creator education opportunities, and ambiguous guidelines requiring clarification.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleExportReport}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
             title="Download executive governance summary report"
           >
             <Download className="w-3.5 h-3.5" />
@@ -170,43 +170,43 @@ ${data.guidelineHealth
 
           <Link
             href="/admin"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold shadow-sm transition-colors"
           >
-            <BookOpen className="w-4 h-4 text-cyan-400" />
+            <BookOpen className="w-3.5 h-3.5" />
             <span>Knowledge Base</span>
           </Link>
         </div>
       </div>
 
       {/* Row 1: Category Breakdown & Top 5 Triggered Codes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Category Breakdown */}
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-5">
+        <div className="p-5 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 top-highlight">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200 flex items-center gap-2">
+              <TrendingUp className="w-3.5 h-3.5 text-zinc-400" />
               Findings by Governance Category
             </h3>
-            <span className="text-xs text-slate-400 font-mono">{data.totalFindings} Total Flagged</span>
+            <span className="text-[11px] text-zinc-500 font-mono">{data.totalFindings} Total Flagged</span>
           </div>
 
-          <div className="space-y-3.5">
+          <div className="space-y-3">
             {Object.entries(data.categoryCounts).map(([cat, count]) => {
               const pct = Math.round((count / maxCategoryCount) * 100);
-              const color = categoryColors[cat] || { bg: 'bg-slate-800', text: 'text-slate-300', bar: 'bg-cyan-500' };
+              const barClass = categoryBars[cat] || 'bg-white';
 
               return (
-                <div key={cat} className="space-y-1.5">
+                <div key={cat} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-200 capitalize flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${color.bar}`} />
+                    <span className="font-medium text-zinc-300 capitalize flex items-center gap-1.5 text-[11px]">
+                      <span className={`w-1.5 h-1.5 rounded-full ${barClass}`} />
                       {cat}
                     </span>
-                    <span className="font-mono text-slate-400">{count} issues</span>
+                    <span className="font-mono text-[11px] text-zinc-400">{count} issue{count === 1 ? '' : 's'}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-950 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-[#09090b] overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${color.bar} transition-all duration-500`}
+                      className={`h-full rounded-full ${barClass} transition-all duration-500`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -217,38 +217,38 @@ ${data.guidelineHealth
         </div>
 
         {/* Top 5 Most Triggered Codes */}
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-5">
+        <div className="p-5 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 top-highlight">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200 flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
               Top 5 Most Triggered Guideline Codes
             </h3>
-            <span className="text-xs text-slate-400">High-frequency friction points</span>
+            <span className="text-[11px] text-zinc-500">Frequent friction points</span>
           </div>
 
           {data.top5Codes.length === 0 ? (
-            <p className="text-xs text-slate-500 italic py-8 text-center">
+            <p className="text-xs text-zinc-500 italic py-8 text-center">
               No guidelines triggered yet. Run audits on proposed drafts to populate analytics.
             </p>
           ) : (
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {data.top5Codes.map((item, idx) => {
                 const pct = Math.round((item.count / maxCodeCount) * 100);
                 return (
-                  <div key={item.code} className="space-y-1.5">
+                  <div key={item.code} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-md bg-slate-800 text-slate-300 font-mono text-[10px] font-bold flex items-center justify-center">
+                        <span className="w-4 h-4 rounded bg-white/[0.04] text-zinc-400 font-mono text-[10px] font-medium flex items-center justify-center border border-white/[0.06]">
                           #{idx + 1}
                         </span>
-                        <span className="font-mono font-bold text-cyan-400">{item.code}</span>
-                        <span className="text-[10px] text-slate-500 uppercase">({item.category})</span>
+                        <span className="font-mono font-medium text-zinc-200 text-xs">{item.code}</span>
+                        <span className="text-[10px] text-zinc-500 uppercase font-mono">({item.category})</span>
                       </div>
-                      <span className="font-mono text-slate-300 font-semibold">{item.count} hits</span>
+                      <span className="font-mono text-zinc-300 text-xs font-medium">{item.count} hit{item.count === 1 ? '' : 's'}</span>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-950 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-[#09090b] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-cyan-500 transition-all duration-500"
+                        className="h-full rounded-full bg-zinc-300 transition-all duration-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -261,52 +261,52 @@ ${data.guidelineHealth
       </div>
 
       {/* Row 2: Repeated Mistakes by Creator */}
-      <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-5">
+      <div className="p-5 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 top-highlight">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-base font-bold text-white">Repeated Compliance Tendencies by Creator</h3>
+            <Users className="w-3.5 h-3.5 text-zinc-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Repeated Tendencies by Creator</h3>
           </div>
-          <span className="text-xs text-slate-400">Enables targeted brand education</span>
+          <span className="text-[11px] text-zinc-500">Enables targeted brand education</span>
         </div>
 
         {data.creatorMistakes.length === 0 ? (
-          <p className="text-xs text-slate-500 italic text-center py-6">No creator audit records yet.</p>
+          <p className="text-xs text-zinc-500 italic text-center py-6">No creator audit records yet.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {data.creatorMistakes.map((cm) => (
               <div
                 key={cm.creator}
-                className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3"
+                className="p-3.5 rounded-xl bg-[#09090b] border border-white/[0.06] space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-white">{cm.creator}</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-rose-950/80 text-rose-300 border border-rose-800/60">
+                  <span className="font-medium text-xs text-zinc-100">{cm.creator}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-rose-500/10 text-rose-300 border border-rose-500/20">
                     {cm.totalFindings} flagged
                   </span>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-slate-400">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase block">Frequent Categories</span>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="space-y-1 text-xs text-zinc-400">
+                  <span className="text-[10px] font-mono uppercase text-zinc-500 block">Frequent Categories</span>
+                  <div className="flex flex-wrap gap-1">
                     {Object.entries(cm.categories).map(([cat, count]) => (
                       <span
                         key={cat}
-                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300"
+                        className="px-1.5 py-0.2 rounded bg-white/[0.04] border border-white/[0.06] text-[10px] text-zinc-300"
                       >
-                        {cat}: <strong className="text-white">{count}</strong>
+                        {cat}: <strong className="text-zinc-100">{count}</strong>
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-slate-400 pt-1 border-t border-slate-900">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase block">Common Codes Triggered</span>
+                <div className="space-y-1 text-xs text-zinc-400 pt-1.5 border-t border-white/[0.04]">
+                  <span className="text-[10px] font-mono uppercase text-zinc-500 block">Common Codes</span>
                   <div className="flex flex-wrap gap-1">
                     {Object.entries(cm.commonCodes).map(([code, count]) => (
                       <span
                         key={code}
-                        className="px-1.5 py-0.5 rounded bg-slate-900 text-cyan-400 font-mono text-[10px] border border-cyan-900/50"
+                        className="px-1.5 py-0.2 rounded bg-white/[0.03] text-zinc-300 font-mono text-[10px] border border-white/[0.06]"
                       >
                         {code} ({count})
                       </span>
@@ -319,32 +319,32 @@ ${data.guidelineHealth
         )}
       </div>
 
-      {/* Row 3: Guideline Health & AI-written Clarification Suggestions */}
-      <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      {/* Row 3: Guideline Health & AI Clarification Engine */}
+      <div className="p-5 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 top-highlight">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3.5">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+            <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             <div>
-              <h3 className="text-base font-bold text-white">Guideline Health & Clarification Engine</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Guideline Health & Clarification Engine</h3>
+              <p className="text-xs text-zinc-400">
                 Flags rules that are triggered often and rejected often (indicating ambiguity or creator dispute).
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="flex items-center gap-1 bg-[#09090b] p-1 rounded-lg border border-white/[0.06] text-xs">
             <button
               onClick={() => setHealthFilter('all')}
-              className={`px-3 py-1 rounded-lg font-semibold transition-colors ${
-                healthFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                healthFilter === 'all' ? 'bg-zinc-800 text-zinc-100 border border-white/[0.08]' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               All Rules ({data.guidelineHealth.length})
             </button>
             <button
               onClick={() => setHealthFilter('unclear')}
-              className={`px-3 py-1 rounded-lg font-semibold transition-colors ${
-                healthFilter === 'unclear' ? 'bg-slate-800 text-white' : 'text-slate-400'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                healthFilter === 'unclear' ? 'bg-zinc-800 text-zinc-100 border border-white/[0.08]' : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Needs Clarification ({data.guidelineHealth.filter((g) => g.is_unclear).length})
@@ -352,32 +352,32 @@ ${data.guidelineHealth
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {displayedHealth.map((gh) => (
             <div
               key={gh.guideline.id}
-              className={`p-5 rounded-xl border transition-all space-y-3 ${
+              className={`p-4 rounded-xl border transition-all space-y-2.5 ${
                 gh.is_unclear
-                  ? 'bg-amber-950/20 border-amber-800/80 shadow-md shadow-amber-950/20'
-                  : 'bg-slate-950 border-slate-800/80'
+                  ? 'bg-amber-500/[0.03] border-amber-500/25 shadow-sm'
+                  : 'bg-[#09090b] border-white/[0.06]'
               }`}
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded font-mono text-xs font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/80">
+                  <span className="px-2 py-0.5 rounded font-mono text-[11px] font-semibold bg-white/[0.04] text-zinc-200 border border-white/[0.08]">
                     {gh.guideline.code}
                   </span>
-                  <span className="text-sm font-bold text-white">{gh.guideline.category}</span>
+                  <span className="text-xs font-medium text-zinc-200">{gh.guideline.category}</span>
                   {gh.is_unclear && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-900/80 text-amber-200 border border-amber-700 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" />
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" />
                       Likely Unclear
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
-                  <span>Triggered: <strong className="text-slate-200">{gh.total_triggered}</strong></span>
+                <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-400">
+                  <span>Triggered: <strong className="text-zinc-200">{gh.total_triggered}</strong></span>
                   <span>Rejected: <strong className="text-rose-400">{gh.total_rejected}</strong></span>
                   <span>
                     Rejection Rate:{' '}
@@ -388,17 +388,17 @@ ${data.guidelineHealth
                 </div>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-lg border border-slate-800/70 font-sans">
+              <p className="text-xs text-zinc-300 leading-relaxed bg-[#111113] p-3 rounded-lg border border-white/[0.06] font-sans">
                 &ldquo;{gh.guideline.text}&rdquo;
               </p>
 
               {/* AI Written Clarification Suggestion */}
-              <div className="p-3.5 rounded-lg bg-cyan-950/30 border border-cyan-800/40 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-semibold text-cyan-300">
-                  <Lightbulb className="w-4 h-4 text-cyan-400" />
+              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-medium text-zinc-300 text-[11px]">
+                  <Lightbulb className="w-3.5 h-3.5 text-zinc-400" />
                   <span>AI Recommendation to Clarify Corporate Standard:</span>
                 </div>
-                <p className="text-slate-300 leading-relaxed">{gh.suggestion}</p>
+                <p className="text-zinc-400 leading-relaxed text-xs">{gh.suggestion}</p>
               </div>
             </div>
           ))}

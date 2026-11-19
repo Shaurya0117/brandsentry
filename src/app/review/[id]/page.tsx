@@ -48,7 +48,6 @@ function ReviewContent() {
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [modalSourceCode, setModalSourceCode] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'editor' | 'preview'>('editor');
   const [isCopied, setIsCopied] = useState(false);
 
   // Manual Edit Modal state
@@ -106,28 +105,28 @@ function ReviewContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           newBody,
-          acceptedFindingId: finding.id,
           actor: userName,
           role,
-          actionDescription: `Accepted suggested fix for [${finding.source_code}]: "${finding.quoted_span}" -> "${finding.suggested_fix}"`,
+          actionDescription: `Accepted suggested fix for rule ${finding.source_code}: replaced "${finding.quoted_span}" with "${finding.suggested_fix}"`,
+          acceptedFindingId: finding.id,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to apply fix');
+        throw new Error(err.error || 'Failed to create updated version');
       }
 
-      toast('Fix accepted! Created revised version.', 'success');
+      toast('Fix accepted! New version created and re-audited.', 'success');
       await fetchContentDetails();
     } catch (e: any) {
-      toast(e.message || 'Error applying fix', 'error');
+      toast(e.message || 'Error accepting fix', 'error');
     } finally {
       setIsSubmittingFix(false);
     }
   };
 
-  // Handle Accept ALL Open Deterministic / High-Confidence Fixes at once
+  // Handle Accept All Rule Fixes in One Batch
   const handleAcceptAllRuleFixes = async () => {
     if (!canReviseContent) {
       toast('Creator or Admin role required to revise content.', 'warning');
@@ -135,28 +134,28 @@ function ReviewContent() {
     }
     if (!currentVersion) return;
 
-    const applicable = openFindings.filter((f) => f.suggested_fix && f.suggested_fix.trim() && f.quoted_span && !f.quoted_span.startsWith('['));
-    if (applicable.length === 0) {
-      toast('No direct text fixes available to apply automatically.', 'info');
+    const ruleFindings = openFindings.filter((f) => !f.is_ai);
+    if (ruleFindings.length === 0) {
+      toast('No rule-based findings available to batch accept.', 'info');
       return;
     }
 
     setIsSubmittingFix(true);
     try {
       let updatedBody = currentVersion.body;
-      let count = 0;
+      let appliedCount = 0;
 
-      for (const finding of applicable) {
-        if (updatedBody.includes(finding.quoted_span)) {
-          updatedBody = updatedBody.replace(finding.quoted_span, finding.suggested_fix);
-          count++;
-        } else {
-          const regex = new RegExp(finding.quoted_span.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-          if (regex.test(updatedBody)) {
-            updatedBody = updatedBody.replace(regex, finding.suggested_fix);
-            count++;
-          }
+      for (const rf of ruleFindings) {
+        if (updatedBody.includes(rf.quoted_span)) {
+          updatedBody = updatedBody.replace(rf.quoted_span, rf.suggested_fix);
+          appliedCount++;
         }
+      }
+
+      if (appliedCount === 0) {
+        toast('No matching text spans found to replace.', 'warning');
+        setIsSubmittingFix(false);
+        return;
       }
 
       const res = await fetch(`/api/content/${id}/version`, {
@@ -166,37 +165,36 @@ function ReviewContent() {
           newBody: updatedBody,
           actor: userName,
           role,
-          actionDescription: `Batch-accepted ${count} governance rule fixes at once.`,
+          actionDescription: `Batch accepted ${appliedCount} deterministic rule fixes.`,
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to batch accept fixes');
+      if (!res.ok) throw new Error('Failed to create batch version');
 
-      toast(`Batch accepted ${count} fixes! Created Version ${currentVersion.version_no + 1}.`, 'success');
+      toast(`Applied ${appliedCount} rule fixes in one version! Re-audited successfully.`, 'success');
       await fetchContentDetails();
     } catch (e: any) {
-      toast(e.message || 'Error batch-accepting fixes', 'error');
+      toast(e.message || 'Error applying batch fixes', 'error');
     } finally {
       setIsSubmittingFix(false);
     }
   };
 
-  // Handle Reject Fix
+  // Handle Reject Finding
   const handleRejectFix = async (finding: Finding) => {
     try {
-      const res = await fetch(`/api/content/${id}/findings`, {
+      const res = await fetch(`/api/findings/${finding.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          findingId: finding.id,
           status: 'rejected',
           actor: userName,
           role,
-          explanation: 'Creator rejected suggested governance revision.',
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to update finding status');
+      if (!res.ok) throw new Error('Failed to reject finding');
+
       toast('Finding marked as rejected.', 'info');
       await fetchContentDetails();
     } catch (e: any) {
@@ -277,8 +275,8 @@ function ReviewContent() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-3">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400 mx-auto" />
-        <p className="text-slate-400 text-sm">Loading governance audit results...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60 mx-auto" />
+        <p className="text-zinc-500 text-xs">Loading governance audit results...</p>
       </div>
     );
   }
@@ -286,9 +284,9 @@ function ReviewContent() {
   if (!content || !currentVersion) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Content item not found</h2>
-        <Link href="/create" className="text-cyan-400 underline text-sm">Return to Create</Link>
+        <AlertTriangle className="w-10 h-10 text-rose-400 mx-auto" />
+        <h2 className="text-lg font-semibold text-zinc-100">Content item not found</h2>
+        <Link href="/create" className="text-zinc-300 underline text-xs">Return to Create</Link>
       </div>
     );
   }
@@ -348,9 +346,15 @@ function ReviewContent() {
 
       const isSelected = selectedFindingId === m.finding.id;
       const severityClass = {
-        high: isSelected ? 'bg-rose-500/50 text-rose-100 ring-2 ring-rose-400 shadow-md' : 'bg-rose-950/70 text-rose-200 border-b-2 border-rose-500',
-        medium: isSelected ? 'bg-amber-500/50 text-amber-100 ring-2 ring-amber-400 shadow-md' : 'bg-amber-950/70 text-amber-200 border-b-2 border-amber-500',
-        low: isSelected ? 'bg-blue-500/50 text-blue-100 ring-2 ring-blue-400 shadow-md' : 'bg-blue-950/70 text-blue-200 border-b-2 border-blue-500',
+        high: isSelected
+          ? 'bg-rose-500/25 text-rose-100 ring-1 ring-rose-400 border-b border-rose-400'
+          : 'bg-rose-500/10 text-rose-200 border-b border-rose-500/60 hover:bg-rose-500/20',
+        medium: isSelected
+          ? 'bg-amber-500/25 text-amber-100 ring-1 ring-amber-400 border-b border-amber-400'
+          : 'bg-amber-500/10 text-amber-200 border-b border-amber-500/60 hover:bg-amber-500/20',
+        low: isSelected
+          ? 'bg-blue-500/25 text-blue-100 ring-1 ring-blue-400 border-b border-blue-400'
+          : 'bg-blue-500/10 text-blue-200 border-b border-blue-500/60 hover:bg-blue-500/20',
       }[m.finding.severity];
 
       segments.push(
@@ -361,7 +365,7 @@ function ReviewContent() {
             const el = document.getElementById(`finding-${m.finding.id}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }}
-          className={`cursor-pointer px-1 py-0.5 rounded transition-all font-medium ${severityClass}`}
+          className={`cursor-pointer px-1 py-0.5 rounded transition-all font-sans select-text ${severityClass}`}
           title={`Click to inspect ${m.finding.category} finding (${m.finding.source_code})`}
         >
           {text.slice(m.start, m.end)}
@@ -376,7 +380,7 @@ function ReviewContent() {
     }
 
     return (
-      <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-100 text-base leading-relaxed whitespace-pre-wrap font-sans">
+      <div className="p-6 rounded-2xl bg-[#111113] border border-white/[0.08] text-zinc-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans shadow-inner top-highlight">
         {segments}
       </div>
     );
@@ -386,42 +390,43 @@ function ReviewContent() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Top Banner: Confidential */}
       {content.is_confidential && (
-        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-between text-xs text-slate-300">
+        <div className="p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 flex items-center justify-between text-xs text-zinc-300">
           <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-400" />
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
             <span>
               <strong>Confidential Mode:</strong> External Google Gemini LLM was bypassed. Audit generated strictly using local rule standards.
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">
+          <span className="px-2 py-0.5 rounded bg-white/[0.06] text-zinc-300 font-mono text-[10px]">
             Rule-Based Only
           </span>
         </div>
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800/80">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-white/[0.04] text-zinc-300 border border-white/[0.08]">
               {content.channel}
             </span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-zinc-400">
               Version v{currentVersion.version_no} of {versions.length}
             </span>
-            <span className="text-xs text-slate-400">• By {content.created_by}</span>
-            <span className="text-xs text-slate-500">•</span>
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-zinc-500">•</span>
+            <span className="text-xs text-zinc-400">By {content.created_by}</span>
+            <span className="text-xs text-zinc-500">•</span>
+            <span className="text-xs text-zinc-500 font-mono">
               {wordCount} words • ~{readingTime} min read
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">{content.title}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100 tracking-tight">{content.title}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={copyToClipboard}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
             title="Copy current copy to clipboard"
           >
             {isCopied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -431,7 +436,7 @@ function ReviewContent() {
           <button
             onClick={() => setIsEditingModalOpen(true)}
             disabled={!canReviseContent}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors disabled:opacity-50"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Manual Edit
@@ -439,7 +444,7 @@ function ReviewContent() {
 
           <Link
             href={`/history/${content.id}`}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors"
           >
             <Clock className="w-3.5 h-3.5" />
             History ({versions.length})
@@ -449,7 +454,7 @@ function ReviewContent() {
             <button
               onClick={handleSubmitForApproval}
               disabled={isSubmittingApproval || content.status === 'in_review'}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-xs font-bold shadow-lg shadow-emerald-950 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold shadow-sm transition-all"
             >
               <Send className="w-3.5 h-3.5" />
               {content.status === 'in_review' ? 'In Review Queue' : 'Submit for Approval'}
@@ -463,11 +468,11 @@ function ReviewContent() {
         {/* Left Column (7 cols): Content Text & Highlight Spans */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
               <span>Interactive Highlight Workbench</span>
-              <span className="text-[10px] font-normal text-slate-500">(Click any highlight to jump to finding)</span>
+              <span className="text-[10px] font-normal text-zinc-500">(Click highlight to inspect)</span>
             </span>
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-zinc-500 font-mono">
               {openFindings.length} open issue{openFindings.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -477,32 +482,32 @@ function ReviewContent() {
 
           {/* Associated Campaign Assets / Contrast Info */}
           {(content.image_url || content.text_color) && (
-            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 space-y-2 text-xs">
-              <span className="font-semibold text-slate-300 block">Attached Visual Metadata:</span>
+            <div className="p-4 rounded-xl bg-[#111113] border border-white/[0.08] space-y-2 text-xs">
+              <span className="font-medium text-zinc-300 block">Attached Visual Metadata:</span>
               {content.image_url && (
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-zinc-400">
                   <span>Image:</span>
                   <a
                     href={content.image_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-cyan-400 underline truncate max-w-sm"
+                    className="text-zinc-200 underline truncate max-w-sm hover:text-white"
                   >
                     {content.image_url}
                   </a>
                   {content.image_alt ? (
                     <span className="text-emerald-400 font-medium">(Alt: &quot;{content.image_alt}&quot;)</span>
                   ) : (
-                    <span className="text-rose-400 font-semibold">(Missing Alt Text - VIS-2)</span>
+                    <span className="text-rose-400 font-medium">(Missing Alt Text - VIS-2)</span>
                   )}
                 </div>
               )}
               {content.text_color && (
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-zinc-400">
                   <span>Color palette:</span>
                   <span
-                    className="px-2 py-0.5 rounded border border-slate-700"
-                    style={{ backgroundColor: content.bg_color || '#000', color: content.text_color }}
+                    className="px-2 py-0.5 rounded border border-white/[0.1] text-xs font-mono"
+                    style={{ backgroundColor: content.bg_color || '#09090b', color: content.text_color }}
                   >
                     Text {content.text_color} on {content.bg_color}
                   </span>
@@ -513,10 +518,10 @@ function ReviewContent() {
         </div>
 
         {/* Right Column (5 cols): Findings Panel */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-3.5">
           {/* Findings Header with Category Filters & Batch Action */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
               Findings ({openFindings.length} Active)
             </span>
 
@@ -524,24 +529,24 @@ function ReviewContent() {
               <button
                 onClick={handleAcceptAllRuleFixes}
                 disabled={isSubmittingFix}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 text-[11px] font-bold transition-all shadow-sm"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border border-white/[0.08] text-[11px] font-medium transition-all"
               >
-                <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <CheckCheck className="w-3 h-3 text-zinc-400" />
                 <span>Accept All Rule Fixes</span>
               </button>
             )}
           </div>
 
           {/* Category Filter Chips */}
-          <div className="flex flex-wrap gap-1 p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px]">
+          <div className="flex flex-wrap gap-1 p-1 bg-[#111113] rounded-lg border border-white/[0.08] text-[10px]">
             {['all', 'terminology', 'claim', 'tone', 'accessibility', 'visual'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-2 py-0.5 rounded-md font-semibold capitalize transition-all ${
+                className={`px-2 py-0.5 rounded-md font-medium capitalize transition-all ${
                   categoryFilter === cat
-                    ? 'bg-slate-800 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {cat}
@@ -550,14 +555,14 @@ function ReviewContent() {
           </div>
 
           {filteredOpenFindings.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-slate-900/40 border border-emerald-900/40 text-center space-y-3">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h3 className="text-base font-semibold text-white">
+            <div className="p-8 rounded-2xl bg-[#111113] border border-emerald-500/20 text-center space-y-3">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+              <h3 className="text-sm font-semibold text-zinc-100">
                 {openFindings.length === 0
-                  ? 'All Governance Checks Passed!'
+                  ? 'All Governance Checks Passed'
                   : `No open ${categoryFilter} findings.`}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-zinc-400">
                 {openFindings.length === 0
                   ? `Zero brand violations or factual issues remaining on Version v${currentVersion.version_no}.`
                   : 'Check other category filters above.'}
@@ -565,7 +570,7 @@ function ReviewContent() {
               {content.status !== 'approved' && content.status !== 'in_review' && openFindings.length === 0 && (
                 <button
                   onClick={handleSubmitForApproval}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs shadow-sm transition-all"
                 >
                   <Send className="w-3.5 h-3.5" />
                   Submit for Approval
@@ -573,14 +578,14 @@ function ReviewContent() {
               )}
             </div>
           ) : (
-            <div className="space-y-4 max-h-[750px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[750px] overflow-y-auto pr-1">
               {filteredOpenFindings.map((finding) => {
                 const isSelected = selectedFindingId === finding.id;
 
                 const severityBadge = {
-                  high: 'bg-rose-950/80 text-rose-300 border-rose-800/80',
-                  medium: 'bg-amber-950/80 text-amber-300 border-amber-800/80',
-                  low: 'bg-blue-950/80 text-blue-300 border-blue-800/80',
+                  high: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+                  medium: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+                  low: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
                 }[finding.severity];
 
                 const isNeedsHumanCheck =
@@ -591,44 +596,44 @@ function ReviewContent() {
                     key={finding.id}
                     id={`finding-${finding.id}`}
                     onClick={() => setSelectedFindingId(finding.id)}
-                    className={`p-4 rounded-xl border transition-all space-y-3 ${
+                    className={`p-3.5 rounded-xl border transition-all space-y-2.5 ${
                       isSelected
-                        ? 'bg-slate-900 border-cyan-500/80 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-500'
-                        : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                        ? 'bg-[#18181b] border-white/30 shadow-sm ring-1 ring-white/20'
+                        : 'bg-[#111113] border-white/[0.08] hover:border-white/[0.15]'
                     }`}
                   >
                     {/* Header Row */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="px-1.5 py-0.2 rounded text-[10px] uppercase font-mono tracking-wider bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
                           {finding.category}
                         </span>
 
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${severityBadge}`}>
+                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${severityBadge}`}>
                           {finding.severity.toUpperCase()}
                         </span>
 
                         {finding.is_ai ? (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800/70">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            AI-assisted
+                          <span className="flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
+                            <Sparkles className="w-2.5 h-2.5 text-zinc-400" />
+                            AI
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-950 text-purple-300 border border-purple-800/70">
-                            <Cpu className="w-2.5 h-2.5" />
-                            Rule-based
+                          <span className="flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
+                            <Cpu className="w-2.5 h-2.5 text-zinc-400" />
+                            Rule
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2">
                         {isNeedsHumanCheck && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1">
-                            <HelpCircle className="w-3 h-3" />
-                            Needs human check
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
+                            <HelpCircle className="w-2.5 h-2.5" />
+                            Human check
                           </span>
                         )}
-                        <span className="text-[11px] font-mono text-slate-400">
+                        <span className="text-[10px] font-mono text-zinc-500">
                           {Math.round(finding.confidence * 100)}% conf
                         </span>
                       </div>
@@ -636,27 +641,27 @@ function ReviewContent() {
 
                     {/* Cited Source */}
                     <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-slate-400">Cited Standard:</span>
+                      <span className="text-zinc-500 text-[11px]">Standard:</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setModalSourceCode(finding.source_code);
                         }}
-                        className="font-mono font-bold text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+                        className="font-mono text-xs text-zinc-300 hover:text-white underline flex items-center gap-1 transition-colors"
                         title="Click to view full guideline or fact definition"
                       >
                         <span>{finding.source_code}</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-2.5 h-2.5" />
                       </button>
                     </div>
 
                     {/* Explanation */}
-                    <p className="text-xs text-slate-300 leading-relaxed">{finding.explanation}</p>
+                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">{finding.explanation}</p>
 
                     {/* Suggested Fix Diff */}
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        Suggested Resolution (Intent-Preserving Diff)
+                      <span className="text-[9px] uppercase font-mono tracking-wider text-zinc-500">
+                        Suggested Resolution
                       </span>
                       <DiffViewer
                         original={finding.quoted_span}
@@ -666,15 +671,15 @@ function ReviewContent() {
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRejectFix(finding);
                         }}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-950/40 transition-colors"
+                        className="px-2 py-1 rounded text-xs font-medium text-zinc-500 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
                       >
-                        Reject
+                        Dismiss
                       </button>
 
                       <div className="flex items-center gap-2">
@@ -683,7 +688,7 @@ function ReviewContent() {
                             e.stopPropagation();
                             setIsEditingModalOpen(true);
                           }}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+                          className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-300 text-xs font-medium transition-colors"
                         >
                           Edit
                         </button>
@@ -693,7 +698,7 @@ function ReviewContent() {
                             handleAcceptFix(finding);
                           }}
                           disabled={isSubmittingFix || !canReviseContent}
-                          className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 text-xs font-bold transition-all shadow-md shadow-cyan-950"
+                          className="px-3 py-1 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold transition-all shadow-sm"
                         >
                           Accept Fix
                         </button>
@@ -705,21 +710,21 @@ function ReviewContent() {
             </div>
           )}
 
-          {/* Resolved Findings Accordion / Summary */}
+          {/* Resolved Findings Summary */}
           {resolvedFindings.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-slate-900/30 border border-slate-800/70 space-y-2">
-              <span className="text-xs font-semibold text-slate-400 block">
+            <div className="p-3 rounded-xl bg-[#111113] border border-white/[0.06] space-y-2">
+              <span className="text-[11px] font-medium text-zinc-400 block">
                 Resolved Issues ({resolvedFindings.length})
               </span>
               <div className="space-y-1.5">
                 {resolvedFindings.map((rf) => (
-                  <div key={rf.id} className="text-xs text-slate-400 flex items-center justify-between">
-                    <span className="truncate max-w-[200px]">{rf.quoted_span}</span>
+                  <div key={rf.id} className="text-xs text-zinc-400 flex items-center justify-between">
+                    <span className="truncate max-w-[200px] text-zinc-400">{rf.quoted_span}</span>
                     <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
                         rf.status === 'accepted'
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                          : 'bg-slate-800 text-slate-400'
+                          ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                          : 'bg-white/[0.04] text-zinc-500'
                       }`}
                     >
                       {rf.status}
@@ -739,25 +744,25 @@ function ReviewContent() {
 
       {/* Manual Content Revision Modal */}
       {isEditingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4">
-            <h3 className="text-lg font-bold text-white">Manual Content Revision (Create New Version)</h3>
-            <p className="text-xs text-slate-400">
-              Refine the content text directly. Saving will create Version v{currentVersion.version_no + 1} and re-audit it.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#111113] border border-white/[0.12] rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4 top-highlight">
+            <h3 className="text-base font-semibold text-zinc-100">Manual Content Revision (Version v{currentVersion.version_no + 1})</h3>
+            <p className="text-xs text-zinc-400">
+              Refine the draft copy directly. Saving will create a new version and automatically run the 3-step audit.
             </p>
 
             <textarea
               rows={10}
               value={manualEditText}
               onChange={(e) => setManualEditText(e.target.value)}
-              className="w-full p-4 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              className="w-full p-3.5 rounded-xl bg-[#09090b] border border-white/[0.08] text-xs sm:text-sm text-zinc-200 font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-white/20"
             />
 
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsEditingModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                className="px-3.5 py-1.5 rounded-lg bg-white/[0.04] text-zinc-300 text-xs font-medium hover:bg-white/[0.08] border border-white/[0.06]"
               >
                 Cancel
               </button>
@@ -765,7 +770,7 @@ function ReviewContent() {
                 type="button"
                 onClick={handleSaveManualEdit}
                 disabled={isSubmittingFix}
-                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold"
+                className="px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold"
               >
                 Save New Version & Audit
               </button>
@@ -782,8 +787,8 @@ export default function ReviewPage() {
     <Suspense
       fallback={
         <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400 mx-auto" />
-          <p className="text-slate-400 text-sm">Loading governance audit results...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60 mx-auto" />
+          <p className="text-zinc-500 text-xs">Loading governance audit results...</p>
         </div>
       }
     >
