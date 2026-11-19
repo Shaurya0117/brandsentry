@@ -1,0 +1,344 @@
+{
+  "guidelines": [
+    {
+      "code": "TONE-1",
+      "category": "Tone and Voice",
+      "text": "Nova Bank maintains a formal, trustworthy, yet approachable friendly tone. Avoid overly casual slang, emojis in official disclosures, hype keywords (e.g., \"insane savings\", \"crazy low fees\"), and aggressive sales language.",
+      "id": "g-1795058722800-0",
+      "created_at": "2026-11-19T03:25:22.800Z"
+    },
+    {
+      "code": "LEGAL-1",
+      "category": "Regulatory & Consumer Protection",
+      "text": "All communications must adhere to financial regulations. Never promise guaranteed financial returns, never state zero risk or risk-free investing, and always clearly disclose the underlying terms.",
+      "id": "g-1795058722801-1",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "VIS-1",
+      "category": "Visual Accessibility",
+      "text": "All visual campaign text must maintain a minimum contrast ratio of at least 4.5:1 against the background color in accordance with WCAG 2.1 AA requirements.",
+      "id": "g-1795058722801-2",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "VIS-2",
+      "category": "Media Accessibility",
+      "text": "All uploaded campaign images, infographics, visual headers, and banners must include clear, descriptive alternative (alt) text for assistive technology users.",
+      "id": "g-1795058722801-3",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "CLAIM-1",
+      "category": "Substantiated Claims",
+      "text": "Never use unsubstantiated absolute superlatives such as \"#1\", \"the best in the world\", or \"unbeatable\" without citing an official third-party audit or benchmark study.",
+      "id": "g-1795058722801-4",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    }
+  ],
+  "facts": [
+    {
+      "code": "F-12",
+      "statement": "NovaPay uses end-to-end encryption with zero-knowledge architecture.",
+      "id": "f-1795058722801-0",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "F-14",
+      "statement": "Nova Bank deposits are FDIC insured up to $250,000 per depositor via our partner banking network.",
+      "id": "f-1795058722801-1",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "F-18",
+      "statement": "Nova Bank provides 24/7 dedicated customer concierge support for all tier-1 and premium account holders.",
+      "id": "f-1795058722801-2",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "code": "F-22",
+      "statement": "NovaPay contactless point-of-sale transactions settle in an average of 1.4 seconds.",
+      "id": "f-1795058722801-3",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    }
+  ],
+  "terms": [
+    {
+      "preferred": "NovaPay",
+      "banned": "Nova Pay",
+      "note": "Product name \"NovaPay\" must always be written as a single camel-cased word without spaces.",
+      "id": "t-1795058722801-0",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "NovaPay",
+      "banned": "novapay",
+      "note": "Always capitalize NovaPay appropriately.",
+      "id": "t-1795058722801-1",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "Highly secure encryption",
+      "banned": "100% secure",
+      "note": "Never claim \"100% secure\" or complete immunity to cyber threats; absolute guarantees violate financial compliance.",
+      "id": "t-1795058722801-2",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "Competitive market yield",
+      "banned": "guaranteed returns",
+      "note": "Investment yields fluctuate with market conditions and cannot legally be represented as guaranteed.",
+      "id": "t-1795058722801-3",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "Nationally recognized provider",
+      "banned": "#1",
+      "note": "Avoid unverified numeric superlatives like \"#1\" without authorized third-party rating citations.",
+      "id": "t-1795058722801-4",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "Top-tier digital banking",
+      "banned": "best in the world",
+      "note": "Subjective superlatives violate regulatory fair-advertising guidelines.",
+      "id": "t-1795058722801-5",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    },
+    {
+      "preferred": "Ultra-low latency",
+      "banned": "instantaneous magic",
+      "note": "Describe technological capabilities with factual precision rather than magical or exaggerated phrasing.",
+      "id": "t-1795058722801-6",
+      "created_at": "2026-11-19T03:25:22.801Z"
+    }
+  ],
+  "content_items": [
+    {
+      "title": "NovaPay Winter Savings Campaign",
+      "channel": "Instagram post",
+      "status": "draft",
+      "created_by": "Alex (Creator)",
+      "is_confidential": false,
+      "image_url": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44",
+      "image_alt": "",
+      "text_color": "#888888",
+      "bg_color": "#999999",
+      "id": "f470e0e6-23f5-48e7-93ae-a1fb55813ce8",
+      "created_at": "2026-11-19T03:25:22.857Z",
+      "updated_at": "2026-11-19T03:25:22.857Z"
+    },
+    {
+      "title": "NovaPay Winter Savings Campaign",
+      "channel": "Instagram post",
+      "status": "draft",
+      "created_by": "Alex (Creator)",
+      "is_confidential": false,
+      "image_url": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44",
+      "image_alt": "",
+      "text_color": "#888888",
+      "bg_color": "#999999",
+      "id": "744c9415-3f7e-44fa-bc90-bd5e8edf6bb4",
+      "created_at": "2026-11-19T03:23:53.792Z",
+      "updated_at": "2026-11-19T03:23:53.792Z"
+    }
+  ],
+  "versions": [
+    {
+      "content_id": "744c9415-3f7e-44fa-bc90-bd5e8edf6bb4",
+      "version_no": 1,
+      "body": "Get the new Nova Pay app today! We guarantee returns and 100% secure storage. Ranked #1 and best in the world. Email us at info@novabank.com.",
+      "id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "created_at": "2026-11-19T03:23:53.795Z"
+    },
+    {
+      "content_id": "f470e0e6-23f5-48e7-93ae-a1fb55813ce8",
+      "version_no": 1,
+      "body": "Get the new Nova Pay app today! We guarantee returns and 100% secure storage. Ranked #1 and best in the world. Email us at info@novabank.com.",
+      "id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "created_at": "2026-11-19T03:25:22.860Z"
+    }
+  ],
+  "findings": [
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "Nova Pay",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"Nova Pay\". Preferred terminology is \"NovaPay\". (Product name \"NovaPay\" must always be written as a single camel-cased word without spaces.)",
+      "suggested_fix": "NovaPay",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "id": "a0aa27ca-21fd-4355-8e55-7aa80233433f",
+      "created_at": "2026-11-19T03:23:53.797Z"
+    },
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "100% secure",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"100% secure\". Preferred terminology is \"Highly secure encryption\". (Never claim \"100% secure\" or complete immunity to cyber threats; absolute guarantees violate financial compliance.)",
+      "suggested_fix": "Highly secure encryption",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "id": "6e577fa6-4d82-44fa-b2cd-75edd96fda0a",
+      "created_at": "2026-11-19T03:23:53.797Z"
+    },
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "best in the world",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"best in the world\". Preferred terminology is \"Top-tier digital banking\". (Subjective superlatives violate regulatory fair-advertising guidelines.)",
+      "suggested_fix": "Top-tier digital banking",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "id": "5b927ea5-d7ac-4b4c-bf40-0350d70c241d",
+      "created_at": "2026-11-19T03:23:53.797Z"
+    },
+    {
+      "category": "accessibility",
+      "severity": "high",
+      "quoted_span": "[Uploaded Visual Media / Header Image]",
+      "source_code": "VIS-2",
+      "explanation": "Campaign visual or banner was provided without descriptive alternative text (alt text) for screen readers.",
+      "suggested_fix": "Add concise descriptive alt text explaining the graphic context and purpose.",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "id": "5102f292-17e1-48d2-8c19-ec21769c7e35",
+      "created_at": "2026-11-19T03:23:53.797Z"
+    },
+    {
+      "category": "visual",
+      "severity": "high",
+      "quoted_span": "Color scheme: Text #888888 on #999999",
+      "source_code": "VIS-1",
+      "explanation": "Calculated contrast ratio is 1.24:1, which is below the WCAG AA minimum required ratio of 4.5:1.",
+      "suggested_fix": "Adjust text or background color brightness to achieve at least 4.5:1 contrast.",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "bb79bd24-dd73-434f-9354-68c1f05f49ab",
+      "id": "1e217297-5141-41bd-8a84-83e9a9869f98",
+      "created_at": "2026-11-19T03:23:53.797Z"
+    },
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "Nova Pay",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"Nova Pay\". Preferred terminology is \"NovaPay\". (Product name \"NovaPay\" must always be written as a single camel-cased word without spaces.)",
+      "suggested_fix": "NovaPay",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "id": "c0ecc432-07e3-43d0-bb2e-7339b56c093c",
+      "created_at": "2026-11-19T03:25:22.862Z"
+    },
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "100% secure",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"100% secure\". Preferred terminology is \"Highly secure encryption\". (Never claim \"100% secure\" or complete immunity to cyber threats; absolute guarantees violate financial compliance.)",
+      "suggested_fix": "Highly secure encryption",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "id": "3ab53b9e-7dd1-4749-832a-de8eca12a900",
+      "created_at": "2026-11-19T03:25:22.862Z"
+    },
+    {
+      "category": "terminology",
+      "severity": "medium",
+      "quoted_span": "best in the world",
+      "source_code": "TERM",
+      "explanation": "Used banned brand term \"best in the world\". Preferred terminology is \"Top-tier digital banking\". (Subjective superlatives violate regulatory fair-advertising guidelines.)",
+      "suggested_fix": "Top-tier digital banking",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "id": "3adec533-7917-4ff6-9f7a-3bf5121ca602",
+      "created_at": "2026-11-19T03:25:22.862Z"
+    },
+    {
+      "category": "accessibility",
+      "severity": "high",
+      "quoted_span": "[Uploaded Visual Media / Header Image]",
+      "source_code": "VIS-2",
+      "explanation": "Campaign visual or banner was provided without descriptive alternative text (alt text) for screen readers.",
+      "suggested_fix": "Add concise descriptive alt text explaining the graphic context and purpose.",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "id": "a9e40824-07fc-4d7f-949c-d45030a78cfd",
+      "created_at": "2026-11-19T03:25:22.862Z"
+    },
+    {
+      "category": "visual",
+      "severity": "high",
+      "quoted_span": "Color scheme: Text #888888 on #999999",
+      "source_code": "VIS-1",
+      "explanation": "Calculated contrast ratio is 1.24:1, which is below the WCAG AA minimum required ratio of 4.5:1.",
+      "suggested_fix": "Adjust text or background color brightness to achieve at least 4.5:1 contrast.",
+      "confidence": 1,
+      "status": "open",
+      "is_ai": false,
+      "version_id": "13f4ab57-5bef-4a7e-85c2-31969cea8803",
+      "id": "8ecc4291-2dce-45a7-9af5-17d3972426d1",
+      "created_at": "2026-11-19T03:25:22.862Z"
+    }
+  ],
+  "comments": [],
+  "audit_log": [
+    {
+      "actor": "Alex (Creator)",
+      "role": "Creator",
+      "action": "Created draft content \"NovaPay Winter Savings Campaign\" (v1) and executed BrandSentry audit pipeline. Identified 5 findings (5 rule-based, 0 AI-assisted).",
+      "content_id": "f470e0e6-23f5-48e7-93ae-a1fb55813ce8",
+      "id": "3520a674-3c14-4b7c-99e7-d0ada1957cbe",
+      "created_at": "2026-11-19T03:25:22.865Z"
+    },
+    {
+      "actor": "Admin",
+      "role": "Admin",
+      "action": "Loaded Nova Bank sample brand pack into local knowledge base.",
+      "id": "aad981f4-45a5-4bee-9f35-669df6110cb5",
+      "created_at": "2026-11-19T03:25:22.803Z"
+    },
+    {
+      "actor": "Alex (Creator)",
+      "role": "Creator",
+      "action": "Created draft content \"NovaPay Winter Savings Campaign\" (v1) and executed BrandSentry audit pipeline. Identified 5 findings (5 rule-based, 0 AI-assisted).",
+      "content_id": "744c9415-3f7e-44fa-bc90-bd5e8edf6bb4",
+      "id": "9cf29bbb-6af9-4ca3-ae3c-0ce30eea6c9f",
+      "created_at": "2026-11-19T03:23:53.799Z"
+    },
+    {
+      "actor": "Admin",
+      "role": "Admin",
+      "action": "Loaded Nova Bank sample brand pack into local knowledge base.",
+      "id": "b1046dc4-1166-4117-8d6f-8e5a508f75ff",
+      "created_at": "2026-11-19T03:23:53.731Z"
+    },
+    {
+      "id": "d88f2a43-229e-418d-80ca-8f73e0f27dd8",
+      "actor": "System",
+      "role": "Admin",
+      "action": "System initialized with default Nova Bank brand pack.",
+      "created_at": "2026-11-19T03:23:38.977Z"
+    }
+  ]
+}
