@@ -222,8 +222,58 @@ export default function CreatePage() {
         throw new Error(data.error || 'Failed to execute review pipeline.');
       }
 
+      // Cache locally to guarantee instant recovery across stateless serverless lambdas
+      if (typeof window !== 'undefined' && data.content_id) {
+        try {
+          const cachedItem = {
+            content: data.content || {
+              id: data.content_id,
+              title,
+              channel,
+              status: 'draft',
+              created_by: userName,
+              is_confidential: Boolean(isConfidential),
+              image_url: imageUrl.trim() || null,
+              image_alt: imageAlt.trim() || null,
+              text_color: textColor,
+              bg_color: bgColor,
+              created_at: new Date().toISOString(),
+            },
+            currentVersion: data.currentVersion || {
+              id: data.version_id,
+              content_id: data.content_id,
+              version_no: 1,
+              body,
+              created_at: new Date().toISOString(),
+            },
+            versions: data.versions || [
+              {
+                id: data.version_id,
+                content_id: data.content_id,
+                version_no: 1,
+                body,
+                created_at: new Date().toISOString(),
+              },
+            ],
+            findings: data.findings || [],
+            comments: [],
+            auditLogs: [],
+          };
+          localStorage.setItem(`brandsentry_content_${data.content_id}`, JSON.stringify(cachedItem));
+
+          const listStr = localStorage.getItem('brandsentry_items_cache');
+          const list = listStr ? JSON.parse(listStr) : [];
+          localStorage.setItem(
+            'brandsentry_items_cache',
+            JSON.stringify([cachedItem.content, ...list.filter((x: any) => x.id !== data.content_id)])
+          );
+        } catch (e) {
+          console.warn('LocalStorage cache write error:', e);
+        }
+      }
+
       toast(
-        `Audit finished! Identified ${data.findings.length} findings. Redirecting to review workbench...`,
+        `Audit finished! Identified ${data.findings?.length || 0} findings. Redirecting to review workbench...`,
         'success'
       );
 

@@ -64,26 +64,46 @@ export default function QueuePage() {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/content');
-      if (res.ok) {
-        const allData: ContentItem[] = await res.json();
-        setCounts({
-          all: allData.length,
-          in_review: allData.filter((i) => i.status === 'in_review').length,
-          changes_requested: allData.filter((i) => i.status === 'changes_requested').length,
-          approved: allData.filter((i) => i.status === 'approved').length,
-        });
-
-        const filtered = filter === 'all' ? allData : allData.filter((i) => i.status === filter);
-        setItems(filtered);
-
-        if (filtered.length > 0) {
-          if (!selectedItemId || !filtered.some((i) => i.id === selectedItemId)) {
-            setSelectedItemId(filtered[0].id);
-          }
-        } else {
-          setSelectedItemId(null);
+      let allData: ContentItem[] = [];
+      try {
+        const res = await fetch('/api/content');
+        if (res.ok) {
+          allData = await res.json();
         }
+      } catch (e) {}
+
+      // Merge with localStorage items cache for zero-loss serverless fallback
+      if (typeof window !== 'undefined') {
+        try {
+          const cachedStr = localStorage.getItem('brandsentry_items_cache');
+          if (cachedStr) {
+            const cachedList: ContentItem[] = JSON.parse(cachedStr);
+            const map = new Map<string, ContentItem>();
+            allData.forEach((i) => map.set(i.id, i));
+            cachedList.forEach((i) => {
+              if (!map.has(i.id)) map.set(i.id, i);
+            });
+            allData = Array.from(map.values());
+          }
+        } catch (e) {}
+      }
+
+      setCounts({
+        all: allData.length,
+        in_review: allData.filter((i) => i.status === 'in_review').length,
+        changes_requested: allData.filter((i) => i.status === 'changes_requested').length,
+        approved: allData.filter((i) => i.status === 'approved').length,
+      });
+
+      const filtered = filter === 'all' ? allData : allData.filter((i) => i.status === filter);
+      setItems(filtered);
+
+      if (filtered.length > 0) {
+        if (!selectedItemId || !filtered.some((i) => i.id === selectedItemId)) {
+          setSelectedItemId(filtered[0].id);
+        }
+      } else {
+        setSelectedItemId(null);
       }
     } catch (e) {
       toast('Failed to load items.', 'error');

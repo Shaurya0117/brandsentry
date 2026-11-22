@@ -58,7 +58,11 @@ function generateId(): string {
   return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();
 }
 
-const STORE_FILE = path.join(process.cwd(), 'data', 'store.json');
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const PRIMARY_STORE_FILE = IS_SERVERLESS
+  ? '/tmp/brandsentry_store.json'
+  : path.join(process.cwd(), 'data', 'store.json');
+const FALLBACK_STORE_FILE = '/tmp/brandsentry_store.json';
 
 function initDefaultStore(): LocalStore {
   const defaultGuidelines: Guideline[] = SAMPLE_GUIDELINES.map((g, idx) => ({
@@ -103,31 +107,37 @@ let inMemoryStore: LocalStore | null = null;
 
 function getStore(): LocalStore {
   try {
-    if (fs.existsSync(STORE_FILE)) {
-      const data = fs.readFileSync(STORE_FILE, 'utf-8');
+    if (fs.existsSync(PRIMARY_STORE_FILE)) {
+      const data = fs.readFileSync(PRIMARY_STORE_FILE, 'utf-8');
       return JSON.parse(data);
     }
-  } catch (e) {
-    // If running in read-only environment like Vercel serverless where filesystem write isn't persistent
-  }
+  } catch (e) {}
+
+  try {
+    if (fs.existsSync(FALLBACK_STORE_FILE)) {
+      const data = fs.readFileSync(FALLBACK_STORE_FILE, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (e) {}
 
   if (!inMemoryStore) {
     inMemoryStore = initDefaultStore();
-    try {
-      const dir = path.dirname(STORE_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(STORE_FILE, JSON.stringify(inMemoryStore, null, 2), 'utf-8');
-    } catch (e) {}
+    saveStore(inMemoryStore);
   }
   return inMemoryStore;
 }
 
 function saveStore(store: LocalStore) {
   inMemoryStore = store;
+  const json = JSON.stringify(store, null, 2);
   try {
-    const dir = path.dirname(STORE_FILE);
+    const dir = path.dirname(PRIMARY_STORE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(STORE_FILE, JSON.stringify(store, null, 2), 'utf-8');
+    fs.writeFileSync(PRIMARY_STORE_FILE, json, 'utf-8');
+  } catch (e) {}
+
+  try {
+    fs.writeFileSync(FALLBACK_STORE_FILE, json, 'utf-8');
   } catch (e) {}
 }
 

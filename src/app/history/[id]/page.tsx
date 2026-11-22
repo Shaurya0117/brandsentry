@@ -46,19 +46,33 @@ function HistoryContent() {
   const fetchHistoryData = async () => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/content/${id}`);
-      if (!res.ok) throw new Error('Content not found');
-      const data = await res.json();
+      let data: any = null;
+      try {
+        const res = await fetch(`/api/content/${id}`);
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (e) {}
+
+      if (!data && typeof window !== 'undefined') {
+        const cachedStr = localStorage.getItem(`brandsentry_content_${id}`);
+        if (cachedStr) {
+          data = JSON.parse(cachedStr);
+        }
+      }
+
+      if (!data || !data.content) throw new Error('Content not found');
 
       setContent(data.content);
-      setVersions(data.versions);
-      setComments(data.comments);
-      setAuditLogs(data.auditLogs);
+      const vList = data.versions || (data.currentVersion ? [data.currentVersion] : []);
+      setVersions(vList);
+      setComments(data.comments || []);
+      setAuditLogs(data.auditLogs || []);
 
-      if (data.versions.length >= 2) {
+      if (vList.length >= 2) {
         setVersionAIndex(0); // v1
-        setVersionBIndex(data.versions.length - 1); // latest
-      } else if (data.versions.length === 1) {
+        setVersionBIndex(vList.length - 1); // latest
+      } else if (vList.length === 1) {
         setVersionAIndex(0);
         setVersionBIndex(0);
       }

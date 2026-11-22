@@ -110,6 +110,53 @@ export default function HomePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start demo');
 
+      if (typeof window !== 'undefined' && data.content_id) {
+        try {
+          const cachedItem = {
+            content: data.content || {
+              id: data.content_id,
+              title: 'NovaPay Global Launch Campaign (60s Demo)',
+              channel: 'Instagram post',
+              status: 'draft',
+              created_by: 'Alex (Creator)',
+              is_confidential: false,
+              image_url: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=600&q=80',
+              image_alt: '',
+              text_color: '#94a3b8',
+              bg_color: '#cbd5e1',
+              created_at: new Date().toISOString(),
+            },
+            currentVersion: data.currentVersion || {
+              id: data.version_id,
+              content_id: data.content_id,
+              version_no: 1,
+              body: 'Our app is 100% secure and the #1 choice! Nova Pay guarantees high yields with zero risk. Contact support@novabank.com or call +1 800 555 0199 now!',
+              created_at: new Date().toISOString(),
+            },
+            versions: data.versions || [
+              {
+                id: data.version_id,
+                content_id: data.content_id,
+                version_no: 1,
+                body: 'Our app is 100% secure and the #1 choice! Nova Pay guarantees high yields with zero risk. Contact support@novabank.com or call +1 800 555 0199 now!',
+                created_at: new Date().toISOString(),
+              },
+            ],
+            findings: data.findings || [],
+            comments: [],
+            auditLogs: [],
+          };
+          localStorage.setItem(`brandsentry_content_${data.content_id}`, JSON.stringify(cachedItem));
+
+          const listStr = localStorage.getItem('brandsentry_items_cache');
+          const list = listStr ? JSON.parse(listStr) : [];
+          localStorage.setItem(
+            'brandsentry_items_cache',
+            JSON.stringify([cachedItem.content, ...list.filter((x: any) => x.id !== data.content_id)])
+          );
+        } catch (e) {}
+      }
+
       router.push(`/review/${data.content_id}`);
     } catch (e) {
       console.error('Demo error:', e);
