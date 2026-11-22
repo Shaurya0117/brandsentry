@@ -40,6 +40,7 @@ export default function InsightsPage() {
       total_rejected: number;
       rejection_rate: number;
       is_unclear: boolean;
+      health_label?: string;
       suggestion: string;
     }[];
   } | null>(null);
@@ -89,7 +90,7 @@ ${data.guidelineHealth
     (gh) => `### ${gh.guideline.code} - ${gh.guideline.category}
 - **Rule Text**: "${gh.guideline.text}"
 - **Triggered**: ${gh.total_triggered} | **Rejected**: ${gh.total_rejected} (${gh.rejection_rate}% rejection rate)
-- **Status**: ${gh.is_unclear ? '⚠️ LIKELY UNCLEAR - Needs Clarification' : '✅ Stable Adherence'}
+- **Health Label**: ${gh.health_label || (gh.is_unclear ? 'Review wording' : 'Clear')}
 - **AI Recommendation**: ${gh.suggestion}
 `
   )
@@ -368,12 +369,16 @@ ${data.guidelineHealth
                     {gh.guideline.code}
                   </span>
                   <span className="text-xs font-medium text-zinc-200">{gh.guideline.category}</span>
-                  {gh.is_unclear && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
-                      <AlertTriangle className="w-2.5 h-2.5" />
-                      Likely Unclear
-                    </span>
-                  )}
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 font-semibold ${
+                      gh.is_unclear
+                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/25'
+                        : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/25'
+                    }`}
+                  >
+                    {gh.is_unclear ? <AlertTriangle className="w-2.5 h-2.5" /> : <CheckCircle2 className="w-2.5 h-2.5" />}
+                    {gh.health_label || (gh.is_unclear ? 'Review wording' : 'Clear')}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-400">

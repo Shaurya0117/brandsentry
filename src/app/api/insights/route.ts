@@ -88,7 +88,8 @@ export async function GET(request: Request) {
       const rejection_rate = total_triggered > 0 ? Math.round((total_rejected / total_triggered) * 100) : 0;
 
       // Flag as unclear if rejections occur or high trigger/rejection ratio
-      const is_unclear = total_triggered >= 2 && (rejection_rate >= 25 || total_rejected >= 1);
+      const is_unclear = total_rejected > 0 || (total_triggered >= 2 && rejection_rate >= 15);
+      const health_label = is_unclear ? 'Review wording' : 'Clear';
 
       let suggestion = 'Guideline performance is stable and adherence is high.';
       if (is_unclear) {
@@ -111,6 +112,7 @@ export async function GET(request: Request) {
         total_rejected,
         rejection_rate,
         is_unclear,
+        health_label,
         suggestion,
       };
     });
