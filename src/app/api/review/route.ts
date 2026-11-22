@@ -29,9 +29,40 @@ export async function POST(request: Request) {
       bg_color = null,
     } = data;
 
-    if (!title || !body || !channel) {
+    const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+    const trimmedBody = typeof body === 'string' ? body.trim() : '';
+
+    if (!trimmedTitle) {
       return NextResponse.json(
-        { error: 'Title, channel, and content body are required.' },
+        { error: 'Content title cannot be empty or whitespace only.' },
+        { status: 400 }
+      );
+    }
+
+    if (trimmedTitle.length > 200) {
+      return NextResponse.json(
+        { error: `Title exceeds maximum limit of 200 characters (submitted ${trimmedTitle.length} characters).` },
+        { status: 400 }
+      );
+    }
+
+    if (!trimmedBody) {
+      return NextResponse.json(
+        { error: 'Content body cannot be empty or whitespace only.' },
+        { status: 400 }
+      );
+    }
+
+    if (trimmedBody.length > 50000) {
+      return NextResponse.json(
+        { error: `Content body exceeds maximum limit of 50,000 characters (submitted ${trimmedBody.length} characters). Please submit content in sections.` },
+        { status: 400 }
+      );
+    }
+
+    if (!channel) {
+      return NextResponse.json(
+        { error: 'Publication channel is required.' },
         { status: 400 }
       );
     }

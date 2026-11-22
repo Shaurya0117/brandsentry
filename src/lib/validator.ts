@@ -53,6 +53,7 @@ export function validateAndMergeFindings(input: ValidatorInput): Omit<Finding, '
 
     let status = finding.status;
     let confidence = finding.confidence;
+    const verified = Boolean(sourceValid);
 
     if (!sourceValid) {
       // If the source code doesn't exist in our knowledge base, downgrade to needs_human_check
@@ -64,6 +65,12 @@ export function validateAndMergeFindings(input: ValidatorInput): Omit<Finding, '
       status = 'needs_human_check';
     }
 
+    const flaggedReason = finding.flagged_reason || (
+      sourceValid
+        ? `Flagged by model against authoritative knowledge standard ${sourceUpper}. Confidence score: ${(confidence * 100).toFixed(0)}%.`
+        : `Flagged by model, but cited standard ${sourceUpper} is unverified in knowledge base; flagged for human auditor review.`
+    );
+
     validatedAiFindings.push({
       ...finding,
       quoted_span: matchedSpan,
@@ -71,6 +78,8 @@ export function validateAndMergeFindings(input: ValidatorInput): Omit<Finding, '
       confidence,
       status,
       is_ai: true,
+      verified,
+      flagged_reason: flaggedReason,
     });
   }
 

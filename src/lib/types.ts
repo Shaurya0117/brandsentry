@@ -76,6 +76,8 @@ export interface Finding {
   confidence: number; // 0.00 to 1.00
   status: FindingStatus;
   is_ai: boolean;
+  verified?: boolean; // True if cited source code matches an authoritative guideline or fact
+  flagged_reason?: string; // Detailed trigger explanation ("Why this was flagged")
   created_at?: string;
 }
 

@@ -51,6 +51,8 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
         confidence: 1.0,
         status: 'open',
         is_ai: false,
+        verified: true,
+        flagged_reason: `Matched prohibited brand term "${quotedSpan}". Corporate brand dictionary requires "${term.preferred}".`,
       });
     }
   }
@@ -109,6 +111,8 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
           confidence: 1.0,
           status: 'open',
           is_ai: false,
+          verified: true,
+          flagged_reason: `Matched regulatory restriction for pattern "${quotedSpan}". Standard ${pattern.source_code} prohibits unconditional promises or unsubstantiated claims.`,
         });
       }
     }
@@ -127,6 +131,8 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
         confidence: 1.0,
         status: 'open',
         is_ai: false,
+        verified: true,
+        flagged_reason: 'Missing alternative text for screen readers. Web accessibility guideline VIS-2 mandates descriptive alt attributes on all non-decorative visual content.',
       });
     }
   }
@@ -145,6 +151,8 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
         confidence: 1.0,
         status: 'open',
         is_ai: false,
+        verified: true,
+        flagged_reason: `Calculated contrast ratio is ${contrast.ratio}:1, below WCAG 2.1 AA minimum required ratio of 4.5:1. Guideline VIS-1 requires compliant foreground/background color contrast.`,
       });
     }
   }

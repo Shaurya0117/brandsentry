@@ -42,8 +42,17 @@ export async function POST(
       );
     }
 
-    if (!newBody || !newBody.trim()) {
-      return NextResponse.json({ error: 'Content body cannot be empty.' }, { status: 400 });
+    const trimmedBody = typeof newBody === 'string' ? newBody.trim() : '';
+
+    if (!trimmedBody) {
+      return NextResponse.json({ error: 'Content body cannot be empty or whitespace only.' }, { status: 400 });
+    }
+
+    if (trimmedBody.length > 50000) {
+      return NextResponse.json(
+        { error: `Content body exceeds maximum limit of 50,000 characters (submitted ${trimmedBody.length} characters).` },
+        { status: 400 }
+      );
     }
 
     // Get current version number

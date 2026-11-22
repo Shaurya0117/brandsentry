@@ -62,11 +62,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
     }
 
-    // Role check: Only Manager, Reviewer, or Admin can approve or request changes
-    if (['approved', 'changes_requested'].includes(status)) {
+    // Server-side role enforcement
+    if (status === 'approved') {
+      if (!['Manager', 'Admin'].includes(role)) {
+        return NextResponse.json(
+          { error: `Users with role "${role}" cannot authorize publication. Only Managers and Admins have approval authority.` },
+          { status: 403 }
+        );
+      }
+    } else if (status === 'changes_requested') {
       if (!['Manager', 'Reviewer', 'Admin'].includes(role)) {
         return NextResponse.json(
-          { error: `Users with role "${role}" cannot change status to ${status}. Manager or Reviewer role required.` },
+          { error: `Users with role "${role}" cannot request changes. Manager, Reviewer, or Admin role required.` },
           { status: 403 }
         );
       }

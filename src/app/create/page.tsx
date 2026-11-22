@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   PlusCircle,
@@ -18,6 +18,9 @@ import {
   Info,
   Zap,
   Check,
+  FileUp,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { useRole } from '@/lib/context/role-context';
 import { useToast } from '@/components/Toast';
@@ -27,6 +30,7 @@ export default function CreatePage() {
   const router = useRouter();
   const { role, userName } = useRole();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
   const [channel, setChannel] = useState('Instagram post');
@@ -37,6 +41,11 @@ export default function CreatePage() {
   const [textColor, setTextColor] = useState('#ffffff');
   const [bgColor, setBgColor] = useState('#09090b');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // File upload state
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Live pre-flight scan state
   const [liveScan, setLiveScan] = useState<{ count: number; matches: string[] }>({ count: 0, matches: [] });
@@ -86,6 +95,7 @@ export default function CreatePage() {
     setImageAlt(''); // intentionally empty to test VIS-2
     setTextColor('#94a3b8');
     setBgColor('#cbd5e1'); // contrast ~1.5:1 -> triggers VIS-1
+    setUploadedFileName(null);
     toast('Loaded test draft with intentional terminology & contrast violations.', 'info');
   };
 
@@ -99,14 +109,90 @@ export default function CreatePage() {
     setImageAlt('NovaPay digital mobile interface showing zero-knowledge encryption badge');
     setTextColor('#ffffff');
     setBgColor('#0284c7');
+    setUploadedFileName(null);
     toast('Loaded compliant draft adhering to all brand guidelines.', 'info');
+  };
+
+  // Handle PDF / DOCX file upload
+  const handleFileProcess = async (file: File) => {
+    if (!file) return;
+
+    // Check size limit: 5MB
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast(`File size exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please choose a smaller file.`, 'error');
+      return;
+    }
+
+    const nameLower = file.name.toLowerCase();
+    if (!nameLower.endsWith('.pdf') && !nameLower.endsWith('.docx') && !nameLower.endsWith('.txt')) {
+      toast('Unsupported file format. Please upload a PDF (.pdf) or Word document (.docx).', 'error');
+      return;
+    }
+
+    setIsUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/extract-text', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to extract text from document.');
+      }
+
+      setBody(data.text);
+      setUploadedFileName(file.name);
+
+      // Auto-populate title if blank
+      if (!title.trim()) {
+        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        const capitalised = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+        setTitle(capitalised);
+      }
+
+      toast(`Extracted ${data.characterCount.toLocaleString()} characters from "${file.name}"!`, 'success');
+    } catch (err: any) {
+      toast(err.message || 'Error processing document.', 'error');
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileProcess(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileProcess(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !body.trim()) {
-      toast('Title and content body are required.', 'error');
+    if (!title.trim()) {
+      toast('Content title is required.', 'error');
+      return;
+    }
+
+    if (!body.trim()) {
+      toast('Content body to audit cannot be empty.', 'error');
+      return;
+    }
+
+    if (body.trim().length > 50000) {
+      toast(`Content body exceeds maximum allowed length of 50,000 characters (${body.trim().length} characters).`, 'error');
       return;
     }
 
@@ -150,7 +236,7 @@ export default function CreatePage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header */}
+      {/* Header & Step Journey Indicator */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>
           <div className="flex items-center gap-2">
@@ -158,12 +244,12 @@ export default function CreatePage() {
               <PlusCircle className="w-3.5 h-3.5" />
             </span>
             <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-              Pre-Publication Authoring & Audit
+              Step 1 of 3 &bull; Authoring & Pre-Flight
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100 mt-1 tracking-tight">Submit Content for Review</h1>
           <p className="text-xs text-zinc-400">
-            Audit copy against brand guidelines, verified facts, terminology restrictions, and visual contrast.
+            Audit proposed publication copy against brand voice guidelines, verified facts, and WCAG accessibility standards.
           </p>
         </div>
 
@@ -172,14 +258,14 @@ export default function CreatePage() {
           <button
             type="button"
             onClick={loadSampleViolationDraft}
-            className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors cursor-pointer"
           >
             Load Violations Test
           </button>
           <button
             type="button"
             onClick={loadCleanDraft}
-            className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors cursor-pointer"
           >
             Load Compliant Draft
           </button>
@@ -199,6 +285,7 @@ export default function CreatePage() {
                 id="content-title"
                 type="text"
                 required
+                maxLength={200}
                 placeholder="e.g. Q4 NovaPay Feature Release Announcement"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -217,7 +304,7 @@ export default function CreatePage() {
                     key={ch}
                     type="button"
                     onClick={() => setChannel(ch)}
-                    className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                    className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                       channel === ch
                         ? 'bg-zinc-800 text-zinc-100 border-white/25 shadow-sm'
                         : 'bg-[#111113] text-zinc-400 border-white/[0.08] hover:border-white/[0.15] hover:text-zinc-200'
@@ -226,6 +313,65 @@ export default function CreatePage() {
                     {ch}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* PDF / DOCX Document Upload Zone */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={onDrop}
+              className={`p-4 rounded-xl border border-dashed transition-all text-center space-y-2 ${
+                isDragOver
+                  ? 'border-blue-400 bg-blue-500/[0.05]'
+                  : 'border-white/[0.12] bg-[#111113] hover:border-white/[0.2]'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="doc-upload-input"
+                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={onFileInputChange}
+                className="hidden"
+              />
+              <div className="flex items-center justify-center gap-2 text-zinc-400">
+                <FileUp className="w-4 h-4 text-zinc-300" />
+                <span className="text-xs font-medium text-zinc-200">
+                  Import document to audit (PDF or DOCX, max 5MB)
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed font-sans">
+                Drag and drop your marketing brochure, policy draft, or release notes here, or browse files.
+              </p>
+              <div className="pt-1 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingFile}
+                  className="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  {isUploadingFile ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Extracting text...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Choose PDF / DOCX File</span>
+                    </>
+                  )}
+                </button>
+                {uploadedFileName && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    <Check className="w-3 h-3" />
+                    {uploadedFileName}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -245,14 +391,15 @@ export default function CreatePage() {
                       Live check: {liveScan.count} potential hit{liveScan.count > 1 ? 's' : ''} ({liveScan.matches.slice(0, 2).join(', ')})
                     </span>
                   )}
-                  <span className="font-mono text-[11px]">{body.length} chars</span>
+                  <span className="font-mono text-[11px]">{body.length} / 50,000 chars</span>
                 </div>
               </div>
               <textarea
                 id="content-body"
                 required
                 rows={8}
-                placeholder="Paste the proposed publication text here..."
+                maxLength={50000}
+                placeholder="Paste or type proposed publication copy here..."
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 className="w-full px-3.5 py-3 rounded-xl bg-[#111113] border border-white/[0.08] text-zinc-100 text-xs sm:text-sm leading-relaxed placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/25 font-sans"
@@ -336,7 +483,7 @@ export default function CreatePage() {
                         setTextColor(preset.text);
                         setBgColor(preset.bg);
                       }}
-                      className="px-2 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-zinc-300 border border-white/[0.06] transition-colors"
+                      className="px-2 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.08] text-[10px] text-zinc-300 border border-white/[0.06] transition-colors cursor-pointer"
                     >
                       {preset.label}
                     </button>
@@ -469,9 +616,9 @@ export default function CreatePage() {
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>Run Review Pipeline</span>
-                <ArrowRight className="w-4 h-4 ml-0.5" />
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </>
             )}
           </button>

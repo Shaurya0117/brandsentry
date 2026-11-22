@@ -29,8 +29,8 @@ export function maskPII(text: string): { maskedText: string; hadMasking: boolean
   };
 }
 
-// Smart local fallback auditor when external API key is absent or offline
-function generateLocalAIEvaluation(
+// Smart local fallback auditor when external API key is absent, offline, or timed out
+export function generateLocalAIEvaluation(
   content: string,
   channel: string,
   guidelines: Guideline[],
@@ -38,11 +38,26 @@ function generateLocalAIEvaluation(
 ): Omit<Finding, 'id' | 'version_id' | 'created_at'>[] {
   const findings: Omit<Finding, 'id' | 'version_id' | 'created_at'>[] = [];
 
-  // Check for tone issues (slang, aggressive sales language per TONE-1)
+  // 1. Check for tone issues (slang, aggressive sales language per TONE-1)
   const toneSlangPatterns = [
-    { regex: /\b(insane\s+(?:savings|deals|rates)|crazy\s+(?:low|cheap|deals))\b/gi, fix: 'highly competitive rates', explanation: 'Overly casual hype terminology conflicts with Nova Bank formal friendly tone standards.' },
-    { regex: /\b(grab\s+it\s+now|hurry\s+before\s+it['’]s\s+gone|smash\s+that)\b/gi, fix: 'explore our offerings today', explanation: 'High-pressure aggressive sales phrasing conflicts with institutional trust voice.' },
-    { regex: /\b(revolutionize\s+everything|mind[- ]blowing)\b/gi, fix: 'substantially enhance', explanation: 'Hyperbolic phrasing conflicts with TONE-1 formal friendly tone standard.' },
+    {
+      regex: /\b(insane\s+(?:savings|deals|rates)|crazy\s+(?:low|cheap|deals))\b/gi,
+      fix: 'highly competitive rates',
+      explanation: 'Overly casual hype terminology conflicts with Nova Bank formal friendly tone standards.',
+      source: 'TONE-1',
+    },
+    {
+      regex: /\b(grab\s+it\s+now|hurry\s+before\s+it['’]s\s+gone|smash\s+that)\b/gi,
+      fix: 'explore our offerings today',
+      explanation: 'High-pressure aggressive sales phrasing conflicts with institutional trust voice.',
+      source: 'TONE-1',
+    },
+    {
+      regex: /\b(revolutionize\s+everything|mind[- ]blowing)\b/gi,
+      fix: 'substantially enhance',
+      explanation: 'Hyperbolic phrasing conflicts with TONE-1 formal friendly tone standard.',
+      source: 'TONE-1',
+    },
   ];
 
   for (const item of toneSlangPatterns) {
@@ -52,17 +67,19 @@ function generateLocalAIEvaluation(
         category: 'tone',
         severity: 'medium',
         quoted_span: match[0],
-        source_code: 'TONE-1',
+        source_code: item.source,
         explanation: item.explanation,
         suggested_fix: item.fix,
         confidence: 0.88,
         status: 'open',
         is_ai: true,
+        verified: true,
+        flagged_reason: `Flagged by tone voice auditor. Matched casual sales phrasing "${match[0]}". Standard ${item.source} requires professional, empowering communication.`,
       });
     }
   }
 
-  // Check for fact conflicts (e.g. claiming different insurance limit or encryption protocol)
+  // 2. Check for fact conflicts (e.g. claiming different insurance limit or encryption protocol)
   if (content.toLowerCase().includes('fdic') && !content.includes('250,000')) {
     const fdicMatch = content.match(/\bfdic\s+(?:insured|coverage)?[^.]*/i);
     if (fdicMatch) {
@@ -76,11 +93,43 @@ function generateLocalAIEvaluation(
         confidence: 0.92,
         status: 'open',
         is_ai: true,
+        verified: true,
+        flagged_reason: 'Flagged against approved enterprise truth set F-14. Any mention of FDIC insurance must state the $250,000 per depositor limit.',
       });
     }
   }
 
   return findings;
+}
+
+// Robust JSON sanitizer for LLM outputs
+function safeParseLLMJSON(rawText: string): any[] {
+  let cleaned = rawText.trim();
+  // Strip markdown code fences if present
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  }
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object') {
+      return parsed.findings || parsed.violations || parsed.items || [];
+    }
+    return [];
+  } catch (e) {
+    // Attempt to extract JSON array substring
+    const startIdx = cleaned.indexOf('[');
+    const endIdx = cleaned.lastIndexOf(']');
+    if (startIdx !== -1 && endIdx > startIdx) {
+      try {
+        const sub = cleaned.slice(startIdx, endIdx + 1);
+        const subParsed = JSON.parse(sub);
+        if (Array.isArray(subParsed)) return subParsed;
+      } catch (subErr) {}
+    }
+    throw e;
+  }
 }
 
 export async function runAIJudge(input: AIJudgeInput): Promise<AIJudgeOutput> {
@@ -155,95 +204,109 @@ Return ONLY a valid JSON array matching this schema:
 ]
 If there are no violations, return an empty array [].`;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  // 20s timeout with 1 retry
+  const TIMEOUT_MS = 20000;
+  let lastError: Error | null = null;
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-        },
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.warn('[BrandSentry AI Judge] Gemini API returned error, falling back to local auditor:', response.status);
-      const fallbackFindings = generateLocalAIEvaluation(content, channel, guidelines, facts);
-      return {
-        findings: fallbackFindings,
-        aiUnavailable: true,
-        error: `Gemini API returned status ${response.status}`,
-      };
-    }
-
-    const jsonResp = await response.json();
-    const candidates = jsonResp.candidates;
-    if (!candidates || candidates.length === 0) {
-      return { findings: [] };
-    }
-
-    const rawText = candidates[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return { findings: [] };
-    }
-
-    let parsedItems: any[] = [];
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      parsedItems = JSON.parse(rawText);
-      if (!Array.isArray(parsedItems)) {
-        if (typeof parsedItems === 'object' && parsedItems !== null) {
-          parsedItems = (parsedItems as any).findings || (parsedItems as any).violations || [];
-        }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          },
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Gemini API returned status ${response.status}: ${response.statusText}`);
       }
-    } catch (parseErr) {
-      console.error('[BrandSentry AI Judge] Failed to parse JSON response:', rawText);
-      const fallbackFindings = generateLocalAIEvaluation(content, channel, guidelines, facts);
+
+      const jsonResp = await response.json();
+      const candidates = jsonResp.candidates;
+      if (!candidates || candidates.length === 0) {
+        return { findings: [] };
+      }
+
+      const rawText = candidates[0]?.content?.parts?.[0]?.text;
+      if (!rawText) {
+        return { findings: [] };
+      }
+
+      const parsedItems = safeParseLLMJSON(rawText);
+
+      // Safe sanitize items, discard bad / malformed findings
+      const validCategories = new Set(['tone', 'terminology', 'fact', 'claim', 'visual', 'accessibility']);
+      const validSeverities = new Set(['low', 'medium', 'high']);
+
+      const aiFindings: Omit<Finding, 'id' | 'version_id' | 'created_at'>[] = [];
+
+      for (const item of parsedItems) {
+        if (!item || typeof item !== 'object') continue;
+        const quoted = String(item.quoted_span || '').trim();
+        if (!quoted) continue; // Discard findings without quoted span
+
+        const category = validCategories.has(item.category) ? item.category : 'tone';
+        const severity = validSeverities.has(item.severity) ? item.severity : 'medium';
+        const confidence = typeof item.confidence === 'number'
+          ? Math.max(0, Math.min(1, item.confidence))
+          : 0.8;
+        const sourceCode = String(item.source_code || 'TONE-1').trim().toUpperCase();
+
+        aiFindings.push({
+          category,
+          severity,
+          quoted_span: quoted,
+          source_code: sourceCode,
+          explanation: String(item.explanation || 'Governance conflict detected.'),
+          suggested_fix: String(item.suggested_fix || ''),
+          confidence,
+          status: confidence < 0.6 ? 'needs_human_check' : 'open',
+          is_ai: true,
+          verified: true,
+          flagged_reason: `Flagged by Gemini 2.5 Flash against standard ${sourceCode}. Intent-preserving resolution suggested.`,
+        });
+      }
+
       return {
-        findings: fallbackFindings,
-        aiUnavailable: true,
+        findings: aiFindings,
       };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[BrandSentry AI Judge] Attempt ${attempt} failed:`, err.message);
+      if (attempt < 2) {
+        // Brief 500ms delay before single retry
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
-
-    const aiFindings: Omit<Finding, 'id' | 'version_id' | 'created_at'>[] = parsedItems.map((item) => ({
-      category: ['tone', 'terminology', 'fact', 'claim', 'visual', 'accessibility'].includes(item.category)
-        ? item.category
-        : 'tone',
-      severity: ['low', 'medium', 'high'].includes(item.severity) ? item.severity : 'medium',
-      quoted_span: String(item.quoted_span || ''),
-      source_code: String(item.source_code || 'TONE-1'),
-      explanation: String(item.explanation || 'Governance conflict detected.'),
-      suggested_fix: String(item.suggested_fix || ''),
-      confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(1, item.confidence)) : 0.8,
-      status: (typeof item.confidence === 'number' && item.confidence < 0.6) ? 'needs_human_check' : 'open',
-      is_ai: true,
-    }));
-
-    return {
-      findings: aiFindings,
-    };
-  } catch (err: any) {
-    console.warn('[BrandSentry AI Judge] Exception calling Gemini API, using local auditor fallback:', err.message);
-    const fallbackFindings = generateLocalAIEvaluation(content, channel, guidelines, facts);
-    return {
-      findings: fallbackFindings,
-      aiUnavailable: true,
-      error: err.name === 'AbortError' ? 'Gemini API call timed out after 15 seconds.' : err.message,
-    };
   }
+
+  // If both attempts fail, fallback to local rule auditor with banner flag
+  console.warn('[BrandSentry AI Judge] All attempts failed, using local rule-based evaluation fallback.');
+  const fallbackFindings = generateLocalAIEvaluation(content, channel, guidelines, facts);
+  return {
+    findings: fallbackFindings,
+    aiUnavailable: true,
+    error: lastError?.name === 'AbortError'
+      ? 'Gemini API call timed out after 20 seconds. Fallback rule audit completed.'
+      : lastError?.message || 'Gemini API temporarily unreachable.',
+  };
 }
