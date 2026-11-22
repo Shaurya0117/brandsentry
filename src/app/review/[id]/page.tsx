@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ShieldCheck,
   AlertTriangle,
+  AlertOctagon,
   CheckCircle2,
   XCircle,
   HelpCircle,
@@ -26,12 +27,17 @@ import {
   Eye,
   Layers,
   FileCheck,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { ContentItem, ContentVersion, Finding, UserRole } from '@/lib/types';
 import { useRole } from '@/lib/context/role-context';
 import { useToast } from '@/components/Toast';
 import DiffViewer from '@/components/DiffViewer';
 import SourceModal from '@/components/SourceModal';
+import ComplianceScoreRing, { computeComplianceScore } from '@/components/ComplianceScoreRing';
+import StatusBadge from '@/components/StatusBadge';
 
 function ReviewContent() {
   const routeParams = useParams();
@@ -47,8 +53,10 @@ function ReviewContent() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [modalSourceCode, setModalSourceCode] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>({});
 
   // Manual Edit Modal state
   const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
@@ -80,7 +88,7 @@ function ReviewContent() {
     fetchContentDetails();
   }, [id]);
 
-  // Handle Accept Single Fix
+  // Handle Accept Single Fix (creates new version v(N+1))
   const handleAcceptFix = async (finding: Finding) => {
     if (!canReviseContent) {
       toast('Creator or Admin role required to revise content.', 'warning');
@@ -121,6 +129,45 @@ function ReviewContent() {
       await fetchContentDetails();
     } catch (e: any) {
       toast(e.message || 'Error accepting fix', 'error');
+    } finally {
+      setIsSubmittingFix(false);
+    }
+  };
+
+  // Handle Undo Last Accept (reverts to previous version v(N-1))
+  const handleUndoLastAccept = async () => {
+    if (!canReviseContent) {
+      toast('Creator or Admin role required to revise content.', 'warning');
+      return;
+    }
+    if (versions.length < 2) {
+      toast('No previous version to undo to.', 'info');
+      return;
+    }
+
+    const previousVersion = versions[versions.length - 2];
+    setIsSubmittingFix(true);
+    try {
+      const res = await fetch(`/api/content/${id}/version`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newBody: previousVersion.body,
+          actor: userName,
+          role,
+          actionDescription: `Undid last accept: reverted copy back to version v${previousVersion.version_no}`,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to revert version');
+      }
+
+      toast(`Undid last accepted change! Reverted to version v${previousVersion.version_no}.`, 'success');
+      await fetchContentDetails();
+    } catch (e: any) {
+      toast(e.message || 'Error undoing last accept', 'error');
     } finally {
       setIsSubmittingFix(false);
     }
@@ -272,11 +319,59 @@ function ReviewContent() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  const toggleCardCollapse = (findingId: string) => {
+    setCollapsedCards((prev) => ({
+      ...prev,
+      [findingId]: !prev[findingId],
+    }));
+  };
+
+  // Active findings for current version
+  const openFindings = useMemo(() => {
+    return findings.filter((f) => f.status === 'open' || f.status === 'needs_human_check');
+  }, [findings]);
+
+  const resolvedFindings = useMemo(() => {
+    return findings.filter((f) => f.status === 'accepted' || f.status === 'rejected');
+  }, [findings]);
+
+  // Compute Brand Compliance Score
+  const complianceScore = useMemo(() => {
+    return computeComplianceScore(findings);
+  }, [findings]);
+
+  // Category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: openFindings.length };
+    openFindings.forEach((f) => {
+      counts[f.category] = (counts[f.category] || 0) + 1;
+    });
+    return counts;
+  }, [openFindings]);
+
+  // Severity counts
+  const severityCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: openFindings.length };
+    openFindings.forEach((f) => {
+      counts[f.severity] = (counts[f.severity] || 0) + 1;
+    });
+    return counts;
+  }, [openFindings]);
+
+  // Filtered open findings
+  const filteredOpenFindings = useMemo(() => {
+    return openFindings.filter((f) => {
+      const matchesCategory = categoryFilter === 'all' || f.category === categoryFilter;
+      const matchesSeverity = severityFilter === 'all' || f.severity === severityFilter;
+      return matchesCategory && matchesSeverity;
+    });
+  }, [openFindings, categoryFilter, severityFilter]);
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60 mx-auto" />
-        <p className="text-zinc-500 text-xs">Loading governance audit results...</p>
+        <p className="text-zinc-400 text-xs font-mono">Loading governance audit results...</p>
       </div>
     );
   }
@@ -290,14 +385,6 @@ function ReviewContent() {
       </div>
     );
   }
-
-  // Active findings for current version
-  const openFindings = findings.filter((f) => f.status === 'open' || f.status === 'needs_human_check');
-  const resolvedFindings = findings.filter((f) => f.status === 'accepted' || f.status === 'rejected');
-
-  const filteredOpenFindings = categoryFilter === 'all'
-    ? openFindings
-    : openFindings.filter((f) => f.category === categoryFilter);
 
   // Stats
   const wordCount = currentVersion.body.trim().split(/\s+/).filter(Boolean).length;
@@ -388,13 +475,18 @@ function ReviewContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Accessibility live announcement region */}
+      <div aria-live="polite" className="sr-only">
+        {`Brand Compliance Score is ${complianceScore} out of 100. ${openFindings.length} open issues found.`}
+      </div>
+
       {/* Top Banner: Confidential */}
       {content.is_confidential && (
-        <div className="p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 flex items-center justify-between text-xs text-zinc-300">
+        <div className="p-3.5 rounded-xl bg-amber-500/[0.05] border border-amber-500/25 flex items-center justify-between text-xs text-zinc-300">
           <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <Lock className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              <strong>Confidential Mode:</strong> External Google Gemini LLM was bypassed. Audit generated strictly using local rule standards.
+              <strong>Confidential Mode Active:</strong> External Google Gemini LLM was bypassed. Audit generated strictly using local rule standards.
             </span>
           </div>
           <span className="px-2 py-0.5 rounded bg-white/[0.06] text-zinc-300 font-mono text-[10px]">
@@ -403,63 +495,58 @@ function ReviewContent() {
         </div>
       )}
 
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+      {/* Header Bar with Compliance Score Ring */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border-b border-white/[0.08] pb-6">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={content.status} size="sm" />
             <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-white/[0.04] text-zinc-300 border border-white/[0.08]">
               {content.channel}
             </span>
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-zinc-400 font-mono">
               Version v{currentVersion.version_no} of {versions.length}
             </span>
-            <span className="text-xs text-zinc-500">•</span>
+            <span className="text-xs text-zinc-600">•</span>
             <span className="text-xs text-zinc-400">By {content.created_by}</span>
-            <span className="text-xs text-zinc-500">•</span>
-            <span className="text-xs text-zinc-500 font-mono">
+            <span className="text-xs text-zinc-600">•</span>
+            <span className="text-xs text-zinc-400 font-mono">
               {wordCount} words • ~{readingTime} min read
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100 tracking-tight">{content.title}</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={copyToClipboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
-            title="Copy current copy to clipboard"
-          >
-            {isCopied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {isCopied ? 'Copied' : 'Copy Text'}
-          </button>
+        {/* Brand Compliance Score Ring & Header Actions */}
+        <div className="flex flex-wrap items-center gap-4">
+          <ComplianceScoreRing score={complianceScore} size="md" showLabel={true} />
 
-          <button
-            onClick={() => setIsEditingModalOpen(true)}
-            disabled={!canReviseContent}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors disabled:opacity-50"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            Manual Edit
-          </button>
-
-          <Link
-            href={`/history/${content.id}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors"
-          >
-            <Clock className="w-3.5 h-3.5" />
-            History ({versions.length})
-          </Link>
-
-          {content.status !== 'approved' && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleSubmitForApproval}
-              disabled={isSubmittingApproval || content.status === 'in_review'}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold shadow-sm transition-all"
+              onClick={copyToClipboard}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
+              title="Copy current copy to clipboard"
             >
-              <Send className="w-3.5 h-3.5" />
-              {content.status === 'in_review' ? 'In Review Queue' : 'Submit for Approval'}
+              {isCopied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{isCopied ? 'Copied' : 'Copy'}</span>
             </button>
-          )}
+
+            <button
+              onClick={() => setIsEditingModalOpen(true)}
+              disabled={!canReviseContent}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Manual Edit</span>
+            </button>
+
+            <Link
+              href={`/history/${content.id}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 text-xs font-medium border border-white/[0.08] transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>History ({versions.length})</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -472,7 +559,7 @@ function ReviewContent() {
               <span>Interactive Highlight Workbench</span>
               <span className="text-[10px] font-normal text-zinc-500">(Click highlight to inspect)</span>
             </span>
-            <span className="text-xs text-zinc-500 font-mono">
+            <span className="text-xs text-zinc-400 font-mono">
               {openFindings.length} open issue{openFindings.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -480,7 +567,7 @@ function ReviewContent() {
           {/* Highlighted text component */}
           {renderHighlightedContent()}
 
-          {/* Associated Campaign Assets / Contrast Info */}
+          {/* Attached Campaign Assets / Contrast Info */}
           {(content.image_url || content.text_color) && (
             <div className="p-4 rounded-xl bg-[#111113] border border-white/[0.08] space-y-2 text-xs">
               <span className="font-medium text-zinc-300 block">Attached Visual Metadata:</span>
@@ -518,76 +605,122 @@ function ReviewContent() {
         </div>
 
         {/* Right Column (5 cols): Findings Panel */}
-        <div className="lg:col-span-5 space-y-3.5">
-          {/* Findings Header with Category Filters & Batch Action */}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Findings ({openFindings.length} Active)
-            </span>
+        <div className="lg:col-span-5 space-y-4">
+          {/* Findings Header with Filters & Quick Actions */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                <span>Findings ({openFindings.length} Active)</span>
+              </span>
 
-            {openFindings.length > 1 && canReviseContent && (
-              <button
-                onClick={handleAcceptAllRuleFixes}
-                disabled={isSubmittingFix}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border border-white/[0.08] text-[11px] font-medium transition-all"
-              >
-                <CheckCheck className="w-3 h-3 text-zinc-400" />
-                <span>Accept All Rule Fixes</span>
-              </button>
-            )}
+              {/* Undo Last Accept button */}
+              {versions.length > 1 && canReviseContent && (
+                <button
+                  type="button"
+                  onClick={handleUndoLastAccept}
+                  disabled={isSubmittingFix}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 hover:text-white border border-white/[0.1] text-[11px] font-medium transition-all disabled:opacity-50"
+                  title={`Revert to previous version v${versions[versions.length - 2]?.version_no}`}
+                >
+                  <RotateCcw className="w-3 h-3 text-zinc-400" />
+                  <span>Undo Last Accept</span>
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Chips with Count Badges */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase font-mono tracking-wider text-zinc-500">Filter Category:</div>
+              <div className="flex flex-wrap gap-1 p-1 bg-[#111113] rounded-lg border border-white/[0.08] text-[10px]">
+                {['all', 'terminology', 'claim', 'tone', 'accessibility', 'visual'].map((cat) => {
+                  const count = categoryCounts[cat] || 0;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`px-2 py-0.5 rounded-md font-medium capitalize transition-all flex items-center gap-1 ${
+                        categoryFilter === cat
+                          ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-white/[0.1]'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      <span className={`text-[9px] px-1 rounded-full ${categoryFilter === cat ? 'bg-white/20 text-white' : 'bg-white/[0.05] text-zinc-400'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Severity Filter Chips with Count Badges */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase font-mono tracking-wider text-zinc-500">Filter Severity:</div>
+              <div className="flex flex-wrap gap-1 p-1 bg-[#111113] rounded-lg border border-white/[0.08] text-[10px]">
+                {['all', 'high', 'medium', 'low'].map((sev) => {
+                  const count = severityCounts[sev] || 0;
+                  return (
+                    <button
+                      key={sev}
+                      type="button"
+                      onClick={() => setSeverityFilter(sev)}
+                      className={`px-2 py-0.5 rounded-md font-medium uppercase font-mono transition-all flex items-center gap-1 ${
+                        severityFilter === sev
+                          ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-white/[0.1]'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span>{sev}</span>
+                      <span className={`text-[9px] px-1 rounded-full ${severityFilter === sev ? 'bg-white/20 text-white' : 'bg-white/[0.05] text-zinc-400'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Category Filter Chips */}
-          <div className="flex flex-wrap gap-1 p-1 bg-[#111113] rounded-lg border border-white/[0.08] text-[10px]">
-            {['all', 'terminology', 'claim', 'tone', 'accessibility', 'visual'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-2 py-0.5 rounded-md font-medium capitalize transition-all ${
-                  categoryFilter === cat
-                    ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-white/[0.08]'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
+          {/* Finding Cards List */}
           {filteredOpenFindings.length === 0 ? (
             <div className="p-8 rounded-2xl bg-[#111113] border border-emerald-500/20 text-center space-y-3">
               <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
               <h3 className="text-sm font-semibold text-zinc-100">
                 {openFindings.length === 0
                   ? 'All Governance Checks Passed'
-                  : `No open ${categoryFilter} findings.`}
+                  : `No matching findings for selected filters.`}
               </h3>
               <p className="text-xs text-zinc-400">
                 {openFindings.length === 0
-                  ? `Zero brand violations or factual issues remaining on Version v${currentVersion.version_no}.`
-                  : 'Check other category filters above.'}
+                  ? `Zero brand violations or factual issues remaining on Version v${currentVersion.version_no}. Ready for managerial sign-off.`
+                  : 'Try clearing category or severity filters to view remaining issues.'}
               </p>
               {content.status !== 'approved' && content.status !== 'in_review' && openFindings.length === 0 && (
                 <button
+                  type="button"
                   onClick={handleSubmitForApproval}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs shadow-sm transition-all"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs shadow-sm transition-all"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  Submit for Approval
+                  <span>Submit for Approval</span>
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-3 max-h-[750px] overflow-y-auto pr-1">
+            <div className="space-y-3.5 max-h-[750px] overflow-y-auto pr-1">
               {filteredOpenFindings.map((finding) => {
                 const isSelected = selectedFindingId === finding.id;
+                const isCollapsed = collapsedCards[finding.id] || false;
 
-                const severityBadge = {
-                  high: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
-                  medium: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-                  low: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+                const severityMeta = {
+                  high: { badge: 'bg-rose-500/10 text-rose-300 border-rose-500/25', icon: AlertOctagon, label: 'HIGH RISK' },
+                  medium: { badge: 'bg-amber-500/10 text-amber-300 border-amber-500/25', icon: AlertTriangle, label: 'MEDIUM' },
+                  low: { badge: 'bg-blue-500/10 text-blue-300 border-blue-500/25', icon: Info, label: 'LOW' },
                 }[finding.severity];
 
+                const SeverityIcon = severityMeta.icon;
                 const isNeedsHumanCheck =
                   finding.status === 'needs_human_check' || finding.confidence < 0.6;
 
@@ -596,114 +729,195 @@ function ReviewContent() {
                     key={finding.id}
                     id={`finding-${finding.id}`}
                     onClick={() => setSelectedFindingId(finding.id)}
-                    className={`p-3.5 rounded-xl border transition-all space-y-2.5 ${
+                    className={`p-4 rounded-xl border transition-all space-y-3 ${
                       isSelected
-                        ? 'bg-[#18181b] border-white/30 shadow-sm ring-1 ring-white/20'
+                        ? 'bg-[#18181b] border-white/30 shadow-md ring-1 ring-white/20'
                         : 'bg-[#111113] border-white/[0.08] hover:border-white/[0.15]'
                     }`}
                   >
                     {/* Header Row */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.2 rounded text-[10px] uppercase font-mono tracking-wider bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Category */}
+                        <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-mono tracking-wider bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
                           {finding.category}
                         </span>
 
-                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${severityBadge}`}>
-                          {finding.severity.toUpperCase()}
+                        {/* Severity with icon */}
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono border flex items-center gap-1 ${severityMeta.badge}`}>
+                          <SeverityIcon className="w-2.5 h-2.5" />
+                          <span>{severityMeta.label}</span>
                         </span>
 
+                        {/* Rule vs AI */}
                         {finding.is_ai ? (
-                          <span className="flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
-                            <Sparkles className="w-2.5 h-2.5 text-zinc-400" />
-                            AI
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                            <span>AI-Assisted</span>
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.04] text-zinc-300 border border-white/[0.06]">
-                            <Cpu className="w-2.5 h-2.5 text-zinc-400" />
-                            Rule
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                            <Cpu className="w-2.5 h-2.5 text-cyan-300" />
+                            <span>Rule-Based</span>
+                          </span>
+                        )}
+
+                        {/* Verified Source Badge */}
+                        {finding.verified !== false && (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                            <span>Verified source</span>
                           </span>
                         )}
                       </div>
 
+                      {/* Right Side: Needs human check, Confidence meter, and Collapse toggle */}
                       <div className="flex items-center gap-2">
                         {isNeedsHumanCheck && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
-                            <HelpCircle className="w-2.5 h-2.5" />
-                            Human check
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25 flex items-center gap-1">
+                            <HelpCircle className="w-2.5 h-2.5 text-amber-400" />
+                            <span>Needs human check</span>
                           </span>
                         )}
-                        <span className="text-[10px] font-mono text-zinc-500">
-                          {Math.round(finding.confidence * 100)}% conf
-                        </span>
+
+                        {/* Visual confidence meter */}
+                        <div
+                          className="flex items-center gap-1.5"
+                          title={`Verification Confidence: ${Math.round((finding.confidence || 0) * 100)}%`}
+                        >
+                          <div className="w-12 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                (finding.confidence || 0) >= 0.8
+                                  ? 'bg-emerald-400'
+                                  : (finding.confidence || 0) >= 0.6
+                                  ? 'bg-amber-400'
+                                  : 'bg-rose-400'
+                              }`}
+                              style={{ width: `${Math.round((finding.confidence || 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            {Math.round((finding.confidence || 0) * 100)}%
+                          </span>
+                        </div>
+
+                        {/* Collapse/Expand Toggle */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCardCollapse(finding.id);
+                          }}
+                          className="p-1 rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+                          title={isCollapsed ? 'Expand card' : 'Collapse card'}
+                        >
+                          {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                        </button>
                       </div>
                     </div>
 
-                    {/* Cited Source */}
+                    {/* Cited Source Standard */}
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-zinc-500 text-[11px]">Standard:</span>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setModalSourceCode(finding.source_code);
                         }}
                         className="font-mono text-xs text-zinc-300 hover:text-white underline flex items-center gap-1 transition-colors"
-                        title="Click to view full guideline or fact definition"
+                        title="Click to view full corporate guideline or fact specification"
                       >
                         <span>{finding.source_code}</span>
                         <ExternalLink className="w-2.5 h-2.5" />
                       </button>
                     </div>
 
-                    {/* Explanation */}
-                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">{finding.explanation}</p>
+                    {/* Card Content (Collapsible) */}
+                    {!isCollapsed && (
+                      <div className="space-y-3 pt-1">
+                        {/* Explanation */}
+                        <p className="text-xs text-zinc-300 leading-relaxed font-sans">{finding.explanation}</p>
 
-                    {/* Suggested Fix Diff */}
-                    <div className="space-y-1">
-                      <span className="text-[9px] uppercase font-mono tracking-wider text-zinc-500">
-                        Suggested Resolution
-                      </span>
-                      <DiffViewer
-                        original={finding.quoted_span}
-                        modified={finding.suggested_fix}
-                        mode="split"
-                      />
-                    </div>
+                        {/* Small "Why this was flagged" panel */}
+                        <div className="p-3 rounded-lg bg-[#09090b] border border-white/[0.06] space-y-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-300">
+                            <Info className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>Why this was flagged:</span>
+                          </div>
+                          <p className="text-zinc-300 text-xs leading-relaxed font-sans">
+                            {finding.flagged_reason || (
+                              finding.is_ai
+                                ? `Identified by Gemini semantic evaluation matching brand guideline ${finding.source_code}.`
+                                : `Matched deterministic pattern for ${finding.source_code} in active corporate guidelines.`
+                            )}
+                          </p>
+                          <div className="text-[11px] font-mono text-zinc-400 flex flex-wrap items-center gap-1 pt-1 border-t border-white/[0.04]">
+                            <span className="text-zinc-500">Flagged text:</span>
+                            <span className="text-rose-300 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                              &quot;{finding.quoted_span}&quot;
+                            </span>
+                          </div>
+                        </div>
 
-                    {/* Actions */}
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRejectFix(finding);
-                        }}
-                        className="px-2 py-1 rounded text-xs font-medium text-zinc-500 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
-                      >
-                        Dismiss
-                      </button>
+                        {/* Suggested Fix Diff */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[9px] uppercase font-mono tracking-wider text-zinc-500">
+                            <span>Suggested Intent-Preserving Rewrite</span>
+                            <span className="text-[10px] text-zinc-500 font-sans">Red = removal, Green = addition</span>
+                          </div>
+                          <DiffViewer
+                            original={finding.quoted_span}
+                            modified={finding.suggested_fix}
+                            mode="split"
+                          />
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsEditingModalOpen(true);
-                          }}
-                          className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-300 text-xs font-medium transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAcceptFix(finding);
-                          }}
-                          disabled={isSubmittingFix || !canReviseContent}
-                          className="px-3 py-1 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold transition-all shadow-sm"
-                        >
-                          Accept Fix
-                        </button>
+                        {/* Actions */}
+                        <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRejectFix(finding);
+                            }}
+                            disabled={isSubmittingFix}
+                            className="px-2 py-1 rounded text-xs font-medium text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                            title="Reject finding (updates creator rejection rate for guideline health)"
+                          >
+                            Dismiss / Reject
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setManualEditText(currentVersion.body);
+                                setIsEditingModalOpen(true);
+                              }}
+                              disabled={isSubmittingFix || !canReviseContent}
+                              className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-300 text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptFix(finding);
+                              }}
+                              disabled={isSubmittingFix || !canReviseContent}
+                              className="px-3.5 py-1 rounded-md bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold transition-all shadow-sm flex items-center gap-1"
+                            >
+                              <Check className="w-3 h-3 text-zinc-900" />
+                              <span>Accept Fix</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -712,7 +926,7 @@ function ReviewContent() {
 
           {/* Resolved Findings Summary */}
           {resolvedFindings.length > 0 && (
-            <div className="p-3 rounded-xl bg-[#111113] border border-white/[0.06] space-y-2">
+            <div className="p-3.5 rounded-xl bg-[#111113] border border-white/[0.06] space-y-2">
               <span className="text-[11px] font-medium text-zinc-400 block">
                 Resolved Issues ({resolvedFindings.length})
               </span>
@@ -721,7 +935,7 @@ function ReviewContent() {
                   <div key={rf.id} className="text-xs text-zinc-400 flex items-center justify-between">
                     <span className="truncate max-w-[200px] text-zinc-400">{rf.quoted_span}</span>
                     <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
                         rf.status === 'accepted'
                           ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                           : 'bg-white/[0.04] text-zinc-500'
@@ -734,6 +948,76 @@ function ReviewContent() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Sticky Bottom Action Bar */}
+      <div className="sticky bottom-4 z-30 mt-8 p-3.5 rounded-2xl bg-[#111113]/95 backdrop-blur-md border border-white/[0.12] shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center font-mono text-xs font-bold text-zinc-100 border border-white/[0.1]">
+              {complianceScore}
+            </div>
+            <div className="text-xs">
+              <span className="font-semibold text-zinc-100 block">Score: {complianceScore}/100</span>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                {openFindings.length} open issue{openFindings.length === 1 ? '' : 's'} remaining
+              </span>
+            </div>
+          </div>
+          <StatusBadge status={content.status} size="sm" />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+          {/* Undo last accept button */}
+          {versions.length > 1 && canReviseContent && (
+            <button
+              type="button"
+              onClick={handleUndoLastAccept}
+              disabled={isSubmittingFix}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border border-white/[0.1] text-xs font-medium transition-all disabled:opacity-50"
+              title={`Revert to previous version v${versions[versions.length - 2]?.version_no}`}
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Undo Last Accept</span>
+            </button>
+          )}
+
+          {/* Batch accept rule fixes */}
+          {openFindings.some((f) => !f.is_ai) && canReviseContent && (
+            <button
+              type="button"
+              onClick={handleAcceptAllRuleFixes}
+              disabled={isSubmittingFix}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border border-white/[0.1] text-xs font-medium transition-all disabled:opacity-50"
+            >
+              <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Accept All Rule Fixes</span>
+            </button>
+          )}
+
+          {/* Submit for approval */}
+          {content.status !== 'approved' && (
+            <button
+              type="button"
+              onClick={handleSubmitForApproval}
+              disabled={isSubmittingApproval || content.status === 'in_review'}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 text-xs font-semibold shadow-sm transition-all"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{content.status === 'in_review' ? 'In Review Queue' : 'Submit for Approval'}</span>
+            </button>
+          )}
+
+          {/* Copy text */}
+          <button
+            type="button"
+            onClick={copyToClipboard}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors"
+          >
+            {isCopied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{isCopied ? 'Copied' : 'Copy'}</span>
+          </button>
         </div>
       </div>
 
@@ -788,7 +1072,7 @@ export default function ReviewPage() {
       fallback={
         <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60 mx-auto" />
-          <p className="text-zinc-500 text-xs">Loading governance audit results...</p>
+          <p className="text-zinc-400 text-xs font-mono">Loading governance audit results...</p>
         </div>
       }
     >
