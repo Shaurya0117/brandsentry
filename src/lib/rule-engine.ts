@@ -76,7 +76,7 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
       explanation: 'Financial returns fluctuate with markets and cannot legally be represented as guaranteed or risk-free.',
     },
     {
-      regex: /\b(#1|number\s+one|no\.\s*1)\b(?!\s+(?:ranked|award)\s+by\s+[A-Za-z0-9])/gi,
+      regex: /(?<=^|\s)#1\b|\b(?:number\s+one|no\.\s*1)\b/gi,
       category: 'claim' as const,
       severity: 'high' as const,
       source_code: 'CLAIM-1',
