@@ -4,7 +4,6 @@ import { Guideline, Finding } from '@/lib/types';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
     const [findings, guidelines, contentItems] = await Promise.all([
       getAllFindings(),
       getGuidelines(),

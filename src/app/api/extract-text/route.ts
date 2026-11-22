@@ -34,8 +34,7 @@ export async function POST(request: Request) {
     if (fileName.endsWith('.pdf') || file.type === 'application/pdf') {
       try {
         // Dynamically import or require pdf-parse
-        // @ts-ignore
-        const pdfParseModule = await import('pdf-parse');
+        const pdfParseModule: any = await import('pdf-parse');
         const pdfParse = pdfParseModule.default || pdfParseModule;
         const pdfData = await pdfParse(buffer);
         extractedText = pdfData.text || '';

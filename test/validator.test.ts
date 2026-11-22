@@ -22,8 +22,7 @@ describe('Validator - Knowledge Cross-Check & Anti-Hallucination Gate', () => {
     {
       id: 'f-1',
       code: 'FACT-1',
-      claim: 'Antigravity latency is 12ms',
-      verified_source: 'Q3 2026 Systems Benchmark Report',
+      statement: 'Antigravity latency is 12ms',
     },
   ];
 
