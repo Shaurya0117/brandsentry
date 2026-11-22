@@ -1,11 +1,21 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #09090b;
   --foreground: #f4f4f5;
   --card: #111113;
   --card-border: rgba(255, 255, 255, 0.08);
   --accent: #3b82f6;
+}
+
+html.light {
+  --background: #f8fafc;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+  --accent: #2563eb;
 }
 
 @theme inline {
@@ -16,11 +26,12 @@
 }
 
 body {
-  background: #09090b;
-  color: #f4f4f5;
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 /* Custom minimal scrollbar */
@@ -38,14 +49,26 @@ body {
   border-radius: 9999px;
 }
 
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* Subtle dot-grid ambient background */
 .bg-grid-pattern {
   background-size: 24px 24px;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+}
+
+html.light .bg-grid-pattern {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
 }
 
 /* Top hairline highlight for cards */
@@ -61,4 +84,19 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
   pointer-events: none;
+}
+
+html.light .top-highlight::before {
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+}
+
+/* Focus styles for keyboard accessibility */
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+html.light :focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.6);
+  outline-offset: 2px;
 }
