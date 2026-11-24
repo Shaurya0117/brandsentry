@@ -14,7 +14,16 @@ import {
   FindingStatus,
   UserRole,
 } from './types';
-import { SAMPLE_GUIDELINES, SAMPLE_FACTS, SAMPLE_TERMS } from './seed-data';
+import {
+  SAMPLE_GUIDELINES,
+  SAMPLE_FACTS,
+  SAMPLE_TERMS,
+  SAMPLE_CONTENT_ITEMS,
+  SAMPLE_VERSIONS,
+  SAMPLE_FINDINGS,
+  SAMPLE_COMMENTS,
+  SAMPLE_AUDIT_LOGS,
+} from './seed-data';
 
 // Determine if real Supabase environment variables are provided
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -87,18 +96,19 @@ function initDefaultStore(): LocalStore {
     guidelines: defaultGuidelines,
     facts: defaultFacts,
     terms: defaultTerms,
-    content_items: [],
-    versions: [],
-    findings: [],
-    comments: [],
+    content_items: [...SAMPLE_CONTENT_ITEMS],
+    versions: [...SAMPLE_VERSIONS],
+    findings: [...SAMPLE_FINDINGS],
+    comments: [...SAMPLE_COMMENTS],
     audit_log: [
       {
         id: generateId(),
         actor: 'System',
         role: 'Admin',
-        action: 'System initialized with default Nova Bank brand pack.',
+        action: 'System initialized with default Nova Bank brand pack and sample campaigns.',
         created_at: new Date().toISOString(),
       },
+      ...SAMPLE_AUDIT_LOGS,
     ],
   };
 }
@@ -106,25 +116,39 @@ function initDefaultStore(): LocalStore {
 let inMemoryStore: LocalStore | null = null;
 
 function getStore(): LocalStore {
+  let store: LocalStore | null = null;
   try {
     if (fs.existsSync(PRIMARY_STORE_FILE)) {
       const data = fs.readFileSync(PRIMARY_STORE_FILE, 'utf-8');
-      return JSON.parse(data);
+      store = JSON.parse(data);
     }
   } catch (e) {}
 
-  try {
-    if (fs.existsSync(FALLBACK_STORE_FILE)) {
-      const data = fs.readFileSync(FALLBACK_STORE_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (e) {}
-
-  if (!inMemoryStore) {
-    inMemoryStore = initDefaultStore();
-    saveStore(inMemoryStore);
+  if (!store) {
+    try {
+      if (fs.existsSync(FALLBACK_STORE_FILE)) {
+        const data = fs.readFileSync(FALLBACK_STORE_FILE, 'utf-8');
+        store = JSON.parse(data);
+      }
+    } catch (e) {}
   }
-  return inMemoryStore;
+
+  if (!store) {
+    store = inMemoryStore || initDefaultStore();
+  }
+
+  if (!store.content_items || store.content_items.length === 0) {
+    store.content_items = [...SAMPLE_CONTENT_ITEMS];
+    store.versions = [...(store.versions || []), ...SAMPLE_VERSIONS];
+    store.findings = [...(store.findings || []), ...SAMPLE_FINDINGS];
+    store.comments = [...(store.comments || []), ...SAMPLE_COMMENTS];
+    store.audit_log = [...(store.audit_log || []), ...SAMPLE_AUDIT_LOGS];
+    saveStore(store);
+  } else {
+    inMemoryStore = store;
+  }
+
+  return store;
 }
 
 function saveStore(store: LocalStore) {
@@ -461,6 +485,14 @@ export async function seedBrandPack(): Promise<{ guidelines: number; facts: numb
     id: `t-${Date.now()}-${idx}`,
     created_at: new Date().toISOString(),
   }));
+
+  if (store.content_items.length === 0) {
+    store.content_items = [...SAMPLE_CONTENT_ITEMS];
+    store.versions = [...(store.versions || []), ...SAMPLE_VERSIONS];
+    store.findings = [...(store.findings || []), ...SAMPLE_FINDINGS];
+    store.comments = [...(store.comments || []), ...SAMPLE_COMMENTS];
+    store.audit_log = [...(store.audit_log || []), ...SAMPLE_AUDIT_LOGS];
+  }
 
   saveStore(store);
 
