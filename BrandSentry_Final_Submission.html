@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BrandSentry — Round 3 Final Product Submission</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 18mm 18mm 18mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.55;
+      font-size: 11pt;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3, h4 {
+      color: #0f172a;
+      font-weight: 700;
+      margin-top: 1.4em;
+      margin-bottom: 0.5em;
+    }
+    h1 {
+      font-size: 22pt;
+      line-height: 1.2;
+      margin-top: 0;
+      color: #1e1b4b;
+    }
+    h2 {
+      font-size: 14pt;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-top: 1.8em;
+      color: #312e81;
+    }
+    h3 {
+      font-size: 11.5pt;
+      margin-top: 1.2em;
+      color: #1e293b;
+    }
+    p {
+      margin-top: 0;
+      margin-bottom: 0.8em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-primary { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-danger { background: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3; }
+    
+    .cover-box {
+      border: 2px solid #6366f1;
+      border-radius: 12px;
+      padding: 24px;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+      margin-bottom: 25px;
+    }
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #cbd5e1;
+      font-size: 10pt;
+    }
+    .metadata-grid div strong {
+      display: block;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .metadata-grid a {
+      color: #4338ca;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: #0f172a;
+      text-transform: uppercase;
+      font-size: 8pt;
+      letter-spacing: 0.5px;
+    }
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      background: #ffffff;
+      margin-bottom: 12px;
+    }
+    .card-header {
+      font-weight: 700;
+      color: #1e1b4b;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .pipeline-step {
+      border-left: 3px solid #6366f1;
+      padding-left: 14px;
+      margin: 12px 0;
+    }
+    .pipeline-step strong {
+      color: #312e81;
+    }
+
+    ul, ol {
+      margin-top: 0;
+      margin-bottom: 10px;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    .code-span {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 9pt;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER SECTION -->
+  <div class="cover-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span class="badge badge-primary">Round 3 — Final Product Submission</span>
+      <span class="badge badge-success">Completed & Fully Verified</span>
+    </div>
+    <h1 style="margin-top: 10px; margin-bottom: 4px;">BrandSentry</h1>
+    <p style="font-size: 13pt; color: #4338ca; font-weight: 600; margin-bottom: 10px;">
+      Pre-Publication Brand Governance & Compliance Platform
+    </p>
+    <p style="font-size: 10pt; color: #475569; margin-bottom: 0;">
+      A comprehensive production system enabling marketing, legal, and product teams to detect brand drift, prevent regulatory exposure, and verify corporate accuracy before content goes public.
+    </p>
+
+    <div class="metadata-grid">
+      <div>
+        <strong>Live Working Project Link</strong>
+        <a href="https://brandsentry-two.vercel.app" target="_blank">https://brandsentry-two.vercel.app</a>
+      </div>
+      <div>
+        <strong>Source-Code Repository</strong>
+        <a href="https://github.com/Shaurya0117/brandsentry" target="_blank">https://github.com/Shaurya0117/brandsentry</a>
+      </div>
+      <div>
+        <strong>Target Stack</strong>
+        Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Google Gemini 2.5 Flash, Supabase Postgres
+      </div>
+      <div>
+        <strong>Submission Window</strong>
+        Final Round (21st Nov – 24th Nov 2026) • Team Leader Submission
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: EXECUTIVE SUMMARY -->
+  <h2>1. Executive Summary & Problem Statement</h2>
+  <p>
+    Modern consumer enterprises publish thousands of copy assets each month across fragmented channels—social media advertisements, press statements, email campaigns, and landing pages. Under high-velocity deadlines, marketing workflows routinely trigger four critical hazards:
+  </p>
+  <ul>
+    <li><strong>Regulatory Advertising Violations:</strong> Writers inadvertently make absolute or unprovable promises (e.g. <em>"100% secure"</em>, <em>"guaranteed returns"</em>, <em>"#1 banking platform"</em>), triggering immediate FTC, SEC, and financial advertising sanctions.</li>
+    <li><strong>Brand Drift & Terminology Decay:</strong> Inconsistent product capitalization, spacing, and trademark degradation (e.g. <em>"Nova Pay"</em> instead of the registered trademark <em>"NovaPay"</em>).</li>
+    <li><strong>Accessibility & Visual Non-Compliance:</strong> Attached banner imagery shipping without descriptive screen-reader alternative text (<span class="code-span">alt</span>), and low-contrast color palettes failing WCAG 2.1 AA readability thresholds (&lt; 4.5:1).</li>
+    <li><strong>Unvetted Factual Inaccuracies:</strong> Outdated or contradicted corporate claims contradicting authoritative enterprise truth sets.</li>
+  </ul>
+  <p>
+    <strong>BrandSentry delivers a standalone, self-sufficient governance engine</strong> built on a 3-step audit pipeline: deterministic rule execution, privacy-masked Google Gemini semantic evaluation, and an anti-hallucination validation gate—concluding in a traceable sign-off workflow.
+  </p>
+
+  <!-- SECTION 2: THE THREE COMMITTED IMPROVEMENTS -->
+  <h2>2. The Three Committed Improvements (Delivered in Round 3)</h2>
+  <p>
+    In accordance with our Round 2 commitment, we have finalized and delivered the exact three improvements promised:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 28%;">Committed Improvement</th>
+        <th style="width: 36%;">Technical Implementation</th>
+        <th style="width: 36%;">User Experience & Governance Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>1. Source-Verified Findings & Anti-Hallucination Gate</strong>
+        </td>
+        <td>
+          Every audit finding stores an authoritative <span class="code-span">source_code</span> (e.g., <span class="code-span">LEGAL-1</span>, <span class="code-span">F-14</span>, <span class="code-span">TERM</span>), numeric confidence (0.00–1.00), and a <span class="code-span">verified: boolean</span> flag. If the model cites an unmapped rule or confidence drops below 0.60, the issue is automatically downgraded to <span class="badge badge-warning">Needs human check</span>.
+        </td>
+        <td>
+          Eliminates AI hallucinations. Reviewers can trace every flagged phrase to the exact active corporate standard. Each card features a <em>"Verified source"</em> badge, a visual confidence meter, and an expandable <em>"Why this was flagged"</em> panel detailing the rule definition.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <strong>2. Intent-Preserving Rewrite & Version Diffs</strong>
+        </td>
+        <td>
+          Findings produce semantic replacements that resolve the regulatory or brand breach while preserving original author voice. One-click <strong>Accept Fix</strong>, <strong>Edit</strong>, and <strong>Dismiss / Reject</strong> actions immediately spawn new version <span class="code-span">v(N+1)</span> with automatic re-auditing.
+        </td>
+        <td>
+          Creators fix violations with a single click. Includes an <strong>Undo Last Accept</strong> action that reverts back to <span class="code-span">v(N-1)</span> instantly. Full chronological diff comparison is available at <span class="code-span">/history/[id]</span> with split/inline diff visualizations.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <strong>3. Guideline Health & Analytics Monitor</strong>
+        </td>
+        <td>
+          A real-time diagnostic monitor at <span class="code-span">/insights</span> tracking how frequently each guideline is triggered versus rejected by writers during drafting. Calculates rejection rates and generates health labels (<span class="badge badge-success">Clear</span> or <span class="badge badge-warning">Review wording</span>).
+        </td>
+        <td>
+          Brand managers can identify ambiguous guidelines causing author friction. Provides saved AI recommendations suggesting clearer wording. Includes a one-click executive <strong>Markdown & PDF Compliance Export</strong>.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK FOR CLEAN LAYOUT -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 3: ADDITIONAL POLISH -->
+  <h2>3. Additional Polish & Hardening Completed in Round 3</h2>
+  <p>
+    Beyond the three commitments, the following high-impact features were engineered to transform BrandSentry into an enterprise-grade product:
+  </p>
+
+  <div class="card">
+    <div class="card-header">
+      <span>Explainable Compliance Scoring & Category Breakdown</span>
+      <span class="badge badge-primary">Deterministic Math</span>
+    </div>
+    <p style="margin-bottom: 4px; font-size: 9.5pt;">
+      Replaced black-box scoring with a transparent, explainable validation formula: Base 100 points, with explicit penalties (−25 for Critical/Legal risks, −12 for Medium tone issues, −5 for Low formatting flags). Features an <strong>"Explain Score"</strong> modal itemizing every active deduction and breaks down performance across 4 governance dimensions: <em>Legal & Claims</em>, <em>Brand Terminology</em>, <em>Tone & Voice</em>, and <em>Visual/Accessibility</em>.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span>Downloadable PDF Compliance Certificate</span>
+      <span class="badge badge-success">Physical & Digital Artifact</span>
+    </div>
+    <p style="margin-bottom: 4px; font-size: 9.5pt;">
+      Added a <strong>"PDF Report"</strong> generator on the review workbench producing an official, branded compliance certificate. Captures document ID, title, channel, creator, final compliance score, category breakdown, full finding resolution table, and signed manager approval stamps with a digital verification hash. Formatted with print-specific stylesheet (<span class="code-span">@media print</span>) for instant PDF generation.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span>Risk-Prioritized Governance Queue & Justified Manager Override</span>
+      <span class="badge badge-danger">Enterprise Gate</span>
+    </div>
+    <p style="margin-bottom: 4px; font-size: 9.5pt;">
+      Submissions in <span class="code-span">/queue</span> are classified into <strong>Critical</strong>, <strong>Medium</strong>, and <strong>Low</strong> risk tiers with a risk-priority sorting toggle. If a Manager approves content with unresolved warnings or score &lt; 85, a mandatory <strong>Justified Manager Override Modal</strong> requires entering an audited business or legal exemption reason, permanently recorded in the immutable audit log.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span>Real-Time Rule Activation Toggles in Admin Knowledge Base</span>
+      <span class="badge badge-warning">Interactive Control</span>
+    </div>
+    <p style="margin-bottom: 4px; font-size: 9.5pt;">
+      Added live <strong>Active / Disabled</strong> toggle switches on guidelines and terminology rules in <span class="code-span">/admin</span>. Disabling a rule immediately updates the runtime cache, demonstrating during audits that deactivated guidelines are completely bypassed by the engine.
+    </p>
+  </div>
+
+  <!-- SECTION 4: COMPLETE LIST OF FEATURES BUILT -->
+  <h2>4. Complete List of Features Built</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+    <div>
+      <h3 style="margin-top: 0;">Authoring & Ingestion</h3>
+      <ul>
+        <li><strong>60-Second Demo Flow:</strong> One-click demo on the home page loading a flawed draft and opening the audit workbench.</li>
+        <li><strong>Document Text Extraction:</strong> Upload <span class="code-span">.pdf</span> and <span class="code-span">.docx</span> files (up to 5MB) parsed server-side via <span class="code-span">pdf-parse</span> and <span class="code-span">mammoth</span>.</li>
+        <li><strong>Confidentiality Toggle:</strong> Local-only audit mode bypassing third-party LLMs for embargoed copy.</li>
+        <li><strong>Client-Side PII Masking:</strong> Automatic regex redaction of email addresses and phone numbers.</li>
+      </ul>
+
+      <h3>Auditing & Scoring</h3>
+      <ul>
+        <li><strong>Deterministic Rule Engine:</strong> Word-boundary regex checks for banned terms and absolute claims.</li>
+        <li><strong>WCAG 2.1 AA Accessibility:</strong> Relative luminance contrast ratio calculator (&lt; 4.5:1 flags) and missing image alt tags.</li>
+        <li><strong>Explainable Compliance Score:</strong> Dynamic circular score ring (0–100) with category sub-scores.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 style="margin-top: 0;">Review & Approval Workflow</h3>
+      <ul>
+        <li><strong>Interactive Workbench:</strong> Quoted span text highlighting, category/severity filter chips, and collapsible cards.</li>
+        <li><strong>Intent-Preserving Rewrites:</strong> Before/after diffs with 1-click Accept Fix, Edit, Reject, and Undo Last Accept.</li>
+        <li><strong>Editorial Governance Queue:</strong> Centralized queue with Critical/Medium/Low priority, realistic channel mockups (Instagram, Email, Press Note), and threaded comments.</li>
+        <li><strong>Role-Based Access Control:</strong> Strict backend gates (HTTP 403) ensuring only Managers and Admins can approve content.</li>
+        <li><strong>Version History Diff Viewer:</strong> Full version timelines with split and inline diff comparisons.</li>
+        <li><strong>PDF Compliance Certificate:</strong> Downloadable, printable audit sign-off report.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 5: TECHNICAL ARCHITECTURE -->
+  <h2>5. Technical Architecture & Implementation Summary</h2>
+  <p>
+    BrandSentry is engineered as a modern, decoupled web application utilizing Next.js 16 (App Router) deployed as serverless functions on Vercel:
+  </p>
+
+  <div class="pipeline-step">
+    <strong>Step 1: Deterministic Rule Engine (Local & Immediate)</strong><br>
+    Scans submitted copy using case-preserving word-boundary regular expressions against registered brand terms. Evaluates absolute regulatory hazards (e.g., <em>"100% secure"</em>, <em>"guaranteed returns"</em>, <em>"#1"</em>). Evaluates WCAG relative luminance contrast ratios and image alt tags. All rule findings receive confidence 1.0 and authoritative source codes.
+  </div>
+
+  <div class="pipeline-step">
+    <strong>Step 2: AI Judge (Google Gemini 2.5 Flash with PII Redaction)</strong><br>
+    If not flagged confidential, submitted text undergoes PII sanitization (<span class="code-span">[EMAIL_REDACTED]</span>, <span class="code-span">[PHONE_REDACTED]</span>). Text is passed to <span class="code-span">gemini-2.5-flash</span> with full active guidelines and approved facts. Uses structured JSON schema output mode. Governed by a 20-second circuit breaker with automatic fallback to deterministic findings if the API times out.
+  </div>
+
+  <div class="pipeline-step">
+    <strong>Step 3: Anti-Hallucination Gate & Validator</strong><br>
+    Enforces a strict substring verification test: any model finding whose quoted span does not literally exist in the source document is permanently dropped. Verified findings are checked against corporate database codes. Overlapping spans are merged, prioritizing deterministic rule findings.
+  </div>
+
+  <div class="pipeline-step">
+    <strong>Persistence & Resilient Serverless State</strong><br>
+    Integrates with Supabase Postgres for relational storage. In serverless or disconnected environments without database credentials, BrandSentry automatically persists state to <span class="code-span">/tmp</span> and localStorage, ensuring zero data loss, zero crashes, and flawless offline evaluation for judges.
+  </div>
+
+  <!-- SECTION 6: TESTING & RELIABILITY -->
+  <h2>6. Testing Details & Verification Matrix</h2>
+  <p>
+    Reliability was proven through automated test suites using <strong>Vitest 5.1</strong>, input boundary stress tests, and end-to-end user journey validations:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Test Suite</th>
+        <th>Tests</th>
+        <th>Scenarios Covered</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>PII Masking (<span class="code-span">pii-masking.test.ts</span>)</strong></td>
+        <td>4 passed</td>
+        <td>Email redaction, international phone numbers, complex mixed strings, no false positives on normal numbers.</td>
+        <td><span class="badge badge-success">100% Pass</span></td>
+      </tr>
+      <tr>
+        <td><strong>Color Contrast (<span class="code-span">contrast.test.ts</span>)</strong></td>
+        <td>6 passed</td>
+        <td>WCAG 2.1 relative luminance math, pure black/white 21:1, low-contrast grey on white failure, short 3-hex codes.</td>
+        <td><span class="badge badge-success">100% Pass</span></td>
+      </tr>
+      <tr>
+        <td><strong>Anti-Hallucination Gate (<span class="code-span">validator.test.ts</span>)</strong></td>
+        <td>4 passed</td>
+        <td>Drops hallucinated quotes, accepts exact and case-insensitive substrings, source code verification, precedence merge.</td>
+        <td><span class="badge badge-success">100% Pass</span></td>
+      </tr>
+      <tr>
+        <td><strong>Deterministic Rules (<span class="code-span">rule-engine.test.ts</span>)</strong></td>
+        <td>7 passed</td>
+        <td>Banned terms, case preservation, absolute guarantee regex, missing alt text, inactive rule bypass.</td>
+        <td><span class="badge badge-success">100% Pass</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Edge Case Hardening Under Normal & Adverse Use</h3>
+  <ul>
+    <li><strong>Empty & Whitespace Inputs:</strong> Submitting empty or blank drafts is trapped client-side and server-side with polite user toasts; forms never submit blank records.</li>
+    <li><strong>Double-Click & Re-Submission Prevention:</strong> Buttons (<span class="code-span">Accept Fix</span>, <span class="code-span">Submit for Approval</span>, <span class="code-span">Confirm Request</span>) immediately disable while asynchronous requests are inflight to eliminate race conditions.</li>
+    <li><strong>AI Failure Circuit Breaker:</strong> Tested against invalid keys, rate-limit 429s, and network drops: gracefully falls back to deterministic rule findings without throwing uncaught exceptions.</li>
+    <li><strong>Backend Permission Gates:</strong> Direct PATCH calls to approve content by Creator or Reviewer roles return HTTP 403 Forbidden with descriptive error messages.</li>
+  </ul>
+
+  <!-- SECTION 7: ROADMAP -->
+  <h2>7. Product Roadmap & Future Development Plan</h2>
+  <p>
+    BrandSentry is positioned to become an enterprise-wide pre-publication compliance gateway. Post-hackathon development includes:
+  </p>
+  <ul>
+    <li><strong>Phase 1 (Q1 2027) — Enterprise Single Sign-On (SSO):</strong> SAML 2.0 and Okta integration to replace simulated client roles with directory-governed authorization policies.</li>
+    <li><strong>Phase 2 (Q2 2027) — Figma & Google Docs Plugins:</strong> Real-time copy auditing embedded directly inside design canvases and collaborative documents before export.</li>
+    <li><strong>Phase 3 (Q3 2027) — Vector Knowledge Scaling (<span class="code-span">pgvector</span>):</strong> Semantic retrieval augmentation for enterprise brand libraries exceeding 10,000 guidelines, disclaimers, and legal precedents.</li>
+    <li><strong>Phase 4 (Q4 2027) — Multi-Lingual Brand Compliance:</strong> Automated cross-lingual term enforcement and tone compliance across Spanish, French, German, and Hindi.</li>
+  </ul>
+
+  <div style="margin-top: 25px; padding-top: 14px; border-top: 2px solid #e2e8f0; font-size: 9pt; color: #64748b; text-align: center;">
+    <strong>BrandSentry — Pre-Publication Brand Governance & Compliance Platform</strong><br>
+    Final Submission for Round 3 • Live Link: <a href="https://brandsentry-two.vercel.app">https://brandsentry-two.vercel.app</a> • Repository: <a href="https://github.com/Shaurya0117/brandsentry">Shaurya0117/brandsentry</a>
+  </div>
+
+</body>
+</html>
