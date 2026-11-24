@@ -33,12 +33,14 @@ BrandSentry solves this with an automated **3-Step Pre-Publication Audit Pipelin
 
 - **60-Second Demo Flow:** One-click demo on the home page that automatically loads the sample brand pack, populates a flawed draft (*"Our app is 100% secure and the #1 choice!"*), runs the 3-step audit, and opens the review workbench.
 - **Document Text Extraction (PDF & DOCX):** Server-side parsing of uploaded `.pdf` (`pdf-parse`) and `.docx` (`mammoth`) documents (up to 5MB) directly into the draft editor.
-- **Brand Compliance Score Ring:** Dynamic circular score ring (0–100) computed from finding severities with descriptive health labels (**Ready to Publish**, **Needs Fixes**, **High Risk**).
+- **Explainable Compliance Score & Category Breakdown:** Dynamic circular score ring (0–100) computed deterministically with transparent weight deductions (High: −25, Medium: −12, Low: −5) and dedicated category breakdowns across **Legal & Claims**, **Brand Terminology**, **Tone & Voice**, and **Visual/Accessibility**.
+- **Downloadable PDF Compliance Certificate:** One-click generation of print-ready compliance audit certificates from the review workbench, capturing campaign metadata, executive scores, finding resolution history, and reviewer digital sign-off stamps.
+- **Risk-Prioritized Governance Queue (`/queue`):** Centralized governance inbox with Critical, Medium, and Low risk classification badges, risk-priority sorting, threaded review comments, and **Justified Manager Overrides** for audited exception approvals.
 - **Interactive Review Workbench (`/review/[id]`):** Interactive text highlighting of flagged spans, filter chips by category and severity with count badges, collapsible finding cards, and a sticky bottom action bar.
-- **Editorial Review Queue (`/queue`):** Centralized governance inbox for Managers and Reviewers to inspect pending submissions, add threaded comments, approve publication, or request mandatory changes.
 - **Version History & Diff Viewer (`/history/[id]`):** Complete audit timeline with split/inline diff comparison between arbitrary versions and chronological discussion logs.
-- **Knowledge Base Administration (`/admin`):** Full management for brand guidelines, verified facts, and terminology rules with one-click seed data loading.
-- **Role Simulation:** Instant role switching across **Creator**, **Reviewer**, **Manager**, and **Admin** with contextual tooltips and server-side role enforcement (HTTP 403 on unauthorized status transitions).
+- **Brand Health & Channel Analytics (`/insights`):** Real-time tracking of campaigns audited, approval ratios, average quality scores, and channel-wise governance trends (Instagram, Email, Press Note).
+- **Knowledge Base Administration (`/admin`):** Full management for brand guidelines, verified facts, and terminology rules with one-click rule activation/deactivation toggles and sample pack seeding.
+- **Role Simulation & Server Gates:** Instant role switching across **Creator**, **Reviewer**, **Manager**, and **Admin** with strict server-side authorization enforcement (HTTP 403 on unauthorized status transitions).
 
 ---
 

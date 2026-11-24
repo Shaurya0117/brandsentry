@@ -28,6 +28,22 @@ export default function InsightsPage() {
     totalFindings: number;
     categoryCounts: Record<string, number>;
     top5Codes: { code: string; count: number; category: string }[];
+    campaignStats?: {
+      total: number;
+      approved: number;
+      inReview: number;
+      changesRequested: number;
+      drafts: number;
+    };
+    averageComplianceScore?: number;
+    criticalViolationsCount?: number;
+    channelTrends?: {
+      channel: string;
+      total: number;
+      approved: number;
+      approvalRate: number;
+      averageScore: number;
+    }[];
     creatorMistakes: {
       creator: string;
       totalFindings: number;
@@ -72,9 +88,21 @@ export default function InsightsPage() {
 Generated on: ${new Date().toLocaleString()}
 
 ## Executive Summary
+- Total Campaigns Audited: ${data.campaignStats?.total ?? 0}
+- Approved for Publication: ${data.campaignStats?.approved ?? 0}
+- Pending / Revision Required: ${(data.campaignStats?.inReview ?? 0) + (data.campaignStats?.changesRequested ?? 0)}
+- Average Brand Compliance Score: ${data.averageComplianceScore ?? 100}/100
+- Critical / Legal Violations Prevented: ${data.criticalViolationsCount ?? 0}
 - Total Governance Findings Flagged: ${data.totalFindings}
 - Active Guidelines Analyzed: ${data.guidelineHealth.length}
 - Guidelines Flagged Unclear / Ambiguous: ${data.guidelineHealth.filter((g) => g.is_unclear).length}
+
+## Channel Breakdown & Performance
+${(data.channelTrends || [])
+  .map(
+    (ch) => `- **${ch.channel}**: ${ch.total} campaigns | ${ch.approved} approved (${ch.approvalRate}% clearance rate) | Avg Score: ${ch.averageScore}%`
+  )
+  .join('\n')}
 
 ## Breakdown by Category
 ${Object.entries(data.categoryCounts)
@@ -178,6 +206,117 @@ ${data.guidelineHealth
           </Link>
         </div>
       </div>
+
+      {/* Executive Campaign Metric Strip (Priority 2) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1 */}
+        <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-1.5 top-highlight">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-mono uppercase tracking-wider">Campaigns Audited</span>
+            <FileText className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-zinc-100">
+              {data.campaignStats?.total ?? 0}
+            </span>
+            <span className="text-xs text-zinc-500 font-mono">submissions</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-zinc-400 pt-1 border-t border-white/[0.04]">
+            <span className="text-emerald-400 font-medium">✓ {data.campaignStats?.approved ?? 0} Approved</span>
+            <span>•</span>
+            <span className="text-amber-400 font-medium">⏳ {data.campaignStats?.inReview ?? 0} In Review</span>
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-1.5 top-highlight">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-mono uppercase tracking-wider">Avg Compliance Score</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-zinc-100">
+              {data.averageComplianceScore ?? 100}
+            </span>
+            <span className="text-xs text-zinc-500 font-mono">/ 100</span>
+          </div>
+          <div className="text-[10px] text-zinc-400 pt-1 border-t border-white/[0.04]">
+            <span>Deterministic health across all drafts</span>
+          </div>
+        </div>
+
+        {/* Metric 3 */}
+        <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-1.5 top-highlight">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-mono uppercase tracking-wider">Critical Risks Blocked</span>
+            <AlertTriangle className="w-4 h-4 text-rose-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-rose-300">
+              {data.criticalViolationsCount ?? 0}
+            </span>
+            <span className="text-xs text-rose-400/80 font-mono">intercepted</span>
+          </div>
+          <div className="text-[10px] text-zinc-400 pt-1 border-t border-white/[0.04]">
+            <span>Zero illegal or absolute claims leaked</span>
+          </div>
+        </div>
+
+        {/* Metric 4 */}
+        <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-1.5 top-highlight">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-mono uppercase tracking-wider">Guideline Adherence</span>
+            <Activity className="w-4 h-4 text-purple-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-purple-300">
+              {Math.round(
+                ((data.guidelineHealth.length - data.guidelineHealth.filter((g) => g.is_unclear).length) /
+                  Math.max(data.guidelineHealth.length, 1)) *
+                  100
+              )}
+              %
+            </span>
+            <span className="text-xs text-zinc-500 font-mono">clarity</span>
+          </div>
+          <div className="text-[10px] text-zinc-400 pt-1 border-t border-white/[0.04]">
+            <span>{data.guidelineHealth.filter((g) => !g.is_unclear).length} of {data.guidelineHealth.length} rules stable</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Channel-Wise Performance Strip */}
+      {data.channelTrends && data.channelTrends.length > 0 && (
+        <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Channel Governance & Approval Rates</span>
+            </h3>
+            <span className="text-[11px] font-mono text-zinc-500">Live Channel Breakdown</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {data.channelTrends.map((ch) => (
+              <div key={ch.channel} className="p-3 rounded-xl bg-black/40 border border-white/[0.06] space-y-1 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-zinc-200">{ch.channel}</span>
+                  <span className="font-mono text-[11px] px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-300">
+                    {ch.total} drafts
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] text-zinc-400 pt-1 border-t border-white/[0.04]">
+                  <span>Clearance Rate:</span>
+                  <span className="font-mono font-semibold text-emerald-400">{ch.approvalRate}%</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] text-zinc-400">
+                  <span>Avg Quality Score:</span>
+                  <span className="font-mono text-zinc-200">{ch.averageScore}/100</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Row 1: Category Breakdown & Top 5 Triggered Codes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

@@ -19,6 +19,9 @@ import {
   Layers,
   Search,
   Download,
+  Power,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import { Guideline, Fact, Term } from '@/lib/types';
 import { useRole } from '@/lib/context/role-context';
@@ -228,6 +231,39 @@ export default function AdminPage() {
     }
   };
 
+  const handleToggleActive = async (type: 'guideline' | 'term' | 'fact', item: any) => {
+    if (!canManageKB) {
+      toast('Admin role required to activate or deactivate rules.', 'warning');
+      return;
+    }
+    const newActive = !(item.is_active !== false);
+    const endpoint = type === 'guideline' ? '/api/guidelines' : type === 'fact' ? '/api/facts' : '/api/terms';
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: item.id,
+          code: item.code,
+          is_active: newActive,
+          actor: userName,
+          role,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update status');
+
+      toast(
+        `${item.code || item.preferred || 'Rule'} is now ${newActive ? 'Active' : 'Inactive'}`,
+        newActive ? 'success' : 'info'
+      );
+      await fetchData();
+    } catch (e: any) {
+      toast(e.message || 'Error updating rule status', 'error');
+    }
+  };
+
   // Filter items by search
   const q = searchQuery.toLowerCase().trim();
   const filteredGuidelines = guidelines.filter(
@@ -387,36 +423,71 @@ export default function AdminPage() {
               {filteredGuidelines.map((g) => (
                 <div
                   key={g.id}
-                  className="p-4 rounded-xl bg-[#111113] border border-white/[0.08] hover:border-white/[0.15] transition-all flex flex-col justify-between space-y-3.5 top-highlight"
+                  className={`p-4 rounded-xl bg-[#111113] border transition-all flex flex-col justify-between space-y-3.5 top-highlight ${
+                    g.is_active !== false
+                      ? 'border-white/[0.08] hover:border-white/[0.15]'
+                      : 'border-zinc-800/80 opacity-60'
+                  }`}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded bg-white/[0.04] text-zinc-200 font-mono text-[11px] font-semibold border border-white/[0.08]">
-                        {g.code}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-white/[0.04] text-zinc-200 font-mono text-[11px] font-semibold border border-white/[0.08]">
+                          {g.code}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-mono text-[9px] uppercase font-semibold border ${
+                            g.is_active !== false
+                              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                              : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                          }`}
+                        >
+                          {g.is_active !== false ? 'Active' : 'Disabled'}
+                        </span>
+                      </div>
                       <span className="text-[11px] font-mono text-zinc-400">{g.category}</span>
                     </div>
                     <p className="text-xs text-zinc-200 leading-relaxed font-sans">{g.text}</p>
                   </div>
 
-                  {canManageKB && (
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-end gap-1.5">
+                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
+                    {canManageKB ? (
                       <button
-                        onClick={() => openEditModal('guideline', g)}
-                        className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
-                        aria-label="Edit guideline"
+                        type="button"
+                        onClick={() => handleToggleActive('guideline', g)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-mono transition-colors border ${
+                          g.is_active !== false
+                            ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/20'
+                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border-zinc-700'
+                        }`}
+                        title={g.is_active !== false ? 'Click to disable rule in audits' : 'Click to enable rule in audits'}
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
+                        <Power className="w-3 h-3" />
+                        <span>{g.is_active !== false ? 'Rule Enabled' : 'Rule Disabled'}</span>
                       </button>
-                      <button
-                        onClick={() => handleDelete('guideline', g.id, g.code)}
-                        className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        aria-label="Delete guideline"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-[10px] font-mono text-zinc-500">Read-Only</span>
+                    )}
+
+                    {canManageKB && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal('guideline', g)}
+                          className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+                          aria-label="Edit guideline"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete('guideline', g.id, g.code)}
+                          className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          aria-label="Delete guideline"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -492,12 +563,18 @@ export default function AdminPage() {
                     <th className="px-4 py-3">Prohibited Phrasing</th>
                     <th className="px-4 py-3">Preferred Brand Term</th>
                     <th className="px-4 py-3">Governance Note</th>
+                    <th className="px-4 py-3">Rule Status</th>
                     {canManageKB && <th className="px-4 py-3 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
                   {filteredTerms.map((t) => (
-                    <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr
+                      key={t.id}
+                      className={`hover:bg-white/[0.02] transition-colors ${
+                        t.is_active === false ? 'opacity-60 bg-zinc-950/40' : ''
+                      }`}
+                    >
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 font-mono text-[11px] font-medium border border-rose-500/20">
                           {t.banned}
@@ -510,6 +587,33 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-zinc-300 max-w-md font-sans">
                         {t.note || 'Enforced by deterministic rule engine.'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {canManageKB ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActive('term', t)}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border transition-colors ${
+                              t.is_active !== false
+                                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/20'
+                                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border-zinc-700'
+                            }`}
+                            title="Click to toggle rule activation"
+                          >
+                            <Power className="w-2.5 h-2.5" />
+                            <span>{t.is_active !== false ? 'Active' : 'Disabled'}</span>
+                          </button>
+                        ) : (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                              t.is_active !== false
+                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                            }`}
+                          >
+                            {t.is_active !== false ? 'Active' : 'Disabled'}
+                          </span>
+                        )}
                       </td>
                       {canManageKB && (
                         <td className="px-4 py-3 text-right space-x-1">

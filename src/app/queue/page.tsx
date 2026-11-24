@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Inbox,
@@ -24,10 +24,15 @@ import {
   Eye,
   Check,
   RotateCcw,
+  AlertOctagon,
+  ShieldAlert,
+  ShieldCheck,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { ContentItem, ContentVersion, Finding, Comment, UserRole } from '@/lib/types';
 import { useRole } from '@/lib/context/role-context';
 import { useToast } from '@/components/Toast';
+import { computeComplianceScore, computeDetailedComplianceScore } from '@/components/ComplianceScoreRing';
 
 export default function QueuePage() {
   const { role, userName, setRole, canApprove, canRequestChanges } = useRole();
@@ -35,6 +40,8 @@ export default function QueuePage() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'in_review' | 'changes_requested' | 'approved'>('in_review');
+  const [riskFilter, setRiskFilter] = useState<'all' | 'critical' | 'medium' | 'low'>('all');
+  const [sortByRisk, setSortByRisk] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -51,6 +58,8 @@ export default function QueuePage() {
   const [newCommentText, setNewCommentText] = useState('');
   const [requestChangesText, setRequestChangesText] = useState('');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
   // Counts across all categories
@@ -145,15 +154,33 @@ export default function QueuePage() {
     }
   }, [selectedItemId]);
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (!canApprove) {
       toast('Manager or Admin role required to approve content.', 'warning');
       return;
     }
     if (!detailContent) return;
 
+    const activeIssues = detailFindings.filter((f) => f.status === 'open' || f.status === 'needs_human_check');
+    const score = computeComplianceScore(detailFindings);
+    const requiresOverride = score < 85 || activeIssues.some((f) => f.severity === 'high');
+
+    if (requiresOverride) {
+      setIsOverrideModalOpen(true);
+    } else {
+      executeApproval();
+    }
+  };
+
+  const executeApproval = async (overrideNote?: string) => {
+    if (!detailContent) return;
+
     setIsProcessingAction(true);
     try {
+      const comment = overrideNote
+        ? `[JUSTIFIED MANAGER OVERRIDE] ${overrideNote.trim()} — Publication authorized under exception by ${userName} (${role}).`
+        : `Approved for immediate publication by ${userName} (${role}).`;
+
       const res = await fetch(`/api/content/${detailContent.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -161,7 +188,7 @@ export default function QueuePage() {
           status: 'approved',
           actor: userName,
           role,
-          commentText: `Approved for immediate publication by ${userName} (${role}).`,
+          commentText: comment,
         }),
       });
 
@@ -170,7 +197,14 @@ export default function QueuePage() {
         throw new Error(err.error || 'Failed to approve');
       }
 
-      toast('Content approved and certified for publication!', 'success');
+      toast(
+        overrideNote
+          ? 'Content approved under Justified Manager Override and logged to audit trail!'
+          : 'Content approved and certified for publication!',
+        'success'
+      );
+      setIsOverrideModalOpen(false);
+      setOverrideReason('');
       await fetchItems();
       await fetchDetail(detailContent.id);
     } catch (e: any) {
@@ -273,16 +307,32 @@ export default function QueuePage() {
     'Email': Mail,
   };
 
-  // Filter items by search query
-  const displayedItems = items.filter((item) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      item.title.toLowerCase().includes(q) ||
-      item.channel.toLowerCase().includes(q) ||
-      item.created_by.toLowerCase().includes(q)
-    );
-  });
+  // Filter and prioritize items by search query, status, and risk classification
+  const displayedItems = useMemo(() => {
+    return items
+      .filter((item) => {
+        if (riskFilter !== 'all') {
+          const itemRisk = (item.risk_level || 'Low').toLowerCase();
+          if (itemRisk !== riskFilter) return false;
+        }
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.channel.toLowerCase().includes(q) ||
+          item.created_by.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        if (sortByRisk) {
+          const riskWeight: Record<string, number> = { Critical: 3, Medium: 2, Low: 1 };
+          const wA = riskWeight[a.risk_level || 'Low'] || 1;
+          const wB = riskWeight[b.risk_level || 'Low'] || 1;
+          if (wA !== wB) return wB - wA; // Critical risk prioritised at top
+        }
+        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+      });
+  }, [items, searchQuery, riskFilter, sortByRisk]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -378,6 +428,43 @@ export default function QueuePage() {
             />
           </div>
 
+          {/* Risk Priority Filter Chips */}
+          <div className="flex items-center justify-between gap-1 p-1 rounded-lg bg-[#111113] border border-white/[0.08] text-[10px]">
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  { key: 'all', label: 'All Risks' },
+                  { key: 'critical', label: 'Critical' },
+                  { key: 'medium', label: 'Medium' },
+                  { key: 'low', label: 'Low' },
+                ] as const
+              ).map((rf) => (
+                <button
+                  key={rf.key}
+                  onClick={() => setRiskFilter(rf.key)}
+                  className={`px-2 py-0.5 rounded font-medium capitalize transition-all ${
+                    riskFilter === rf.key
+                      ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-white/[0.1]'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  {rf.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setSortByRisk(!sortByRisk)}
+              className={`px-2 py-0.5 rounded font-mono text-[9px] transition-colors border ${
+                sortByRisk
+                  ? 'bg-rose-500/10 text-rose-300 border-rose-500/25'
+                  : 'bg-white/[0.03] text-zinc-400 border-white/[0.06]'
+              }`}
+              title="Toggle Prioritizing High-Risk Submissions at Top"
+            >
+              {sortByRisk ? 'Risk Priority ▾' : 'Latest First'}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-zinc-500 px-1 pt-1">
             <span>Submissions</span>
             <span>{displayedItems.length} items</span>
@@ -438,10 +525,25 @@ export default function QueuePage() {
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-1.5 border-t border-white/[0.06]">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`px-1.5 py-0.2 rounded font-mono text-[9px] font-semibold border ${
+                            item.risk_level === 'Critical'
+                              ? 'bg-rose-500/10 text-rose-300 border-rose-500/25'
+                              : item.risk_level === 'Medium'
+                              ? 'bg-amber-500/10 text-amber-300 border-amber-500/25'
+                              : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
+                          }`}
+                        >
+                          {item.risk_level ? `${item.risk_level.toUpperCase()} RISK` : 'AUDITED'}
+                        </span>
+                        {item.compliance_score !== undefined && (
+                          <span className="font-mono text-zinc-400 text-[10px]">
+                            {item.compliance_score}/100
+                          </span>
+                        )}
+                      </div>
                       <span className="font-mono">{new Date(item.created_at || '').toLocaleDateString()}</span>
-                      {item.is_confidential && (
-                        <span className="text-amber-400/80 font-mono text-[9px] uppercase tracking-wider">Confidential</span>
-                      )}
                     </div>
                   </button>
                 );
@@ -820,6 +922,69 @@ export default function QueuePage() {
                 className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold"
               >
                 Confirm Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Justified Manager Override Modal */}
+      {isOverrideModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#111113] border border-amber-500/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 top-highlight">
+            <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-amber-400" />
+              <span>Justified Manager Override & Authorization</span>
+            </h3>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              This submission contains <strong className="text-amber-300">{detailFindings.filter((f) => f.status === 'open' || f.status === 'needs_human_check').length} unresolved finding(s)</strong> or a compliance score below standard clearance. Enterprise policy requires a documented managerial justification for publication override.
+            </p>
+
+            {/* Quick preset chips */}
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase font-mono text-zinc-500">Quick Justification Presets:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Authorized by CMO for urgent press release under campaign exception.',
+                  'Legal counsel confirmed verbal clearance for this specific factual phrasing.',
+                  'Minor styling variance permitted for limited social media experiment.',
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setOverrideReason(chip)}
+                    className="px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[10px] border border-white/[0.06] text-left"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <textarea
+              required
+              rows={3}
+              placeholder="Enter documented business reason or legal authorization for overriding active governance flags..."
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              className="w-full p-3 rounded-xl bg-[#09090b] border border-white/[0.08] text-xs text-zinc-200 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOverrideModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg bg-white/[0.04] text-zinc-300 text-xs font-medium hover:bg-white/[0.08] border border-white/[0.06]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => executeApproval(overrideReason || 'Manager authorized publication with active findings.')}
+                disabled={isProcessingAction}
+                className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-md transition-all flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Authorize Override & Publish</span>
               </button>
             </div>
           </div>

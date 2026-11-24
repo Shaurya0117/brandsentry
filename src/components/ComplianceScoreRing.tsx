@@ -8,18 +8,121 @@ interface ComplianceScoreRingProps {
   className?: string;
 }
 
-export function computeComplianceScore(findings: { severity: string; status: string }[]): number {
-  const active = findings.filter((f) => f.status === 'open' || f.status === 'needs_human_check');
-  if (active.length === 0) return 100;
+export interface ScoreDeduction {
+  id: string;
+  category: string;
+  severity: string;
+  quoted_span: string;
+  source_code: string;
+  deduction: number;
+  reason: string;
+}
 
-  let deduction = 0;
+export interface CategoryScore {
+  name: string;
+  categoryKey: string;
+  score: number;
+  activeCount: number;
+  totalCount: number;
+}
+
+export interface DetailedScoreResult {
+  overallScore: number;
+  statusLabel: 'Ready to Publish' | 'Needs Fixes' | 'High Risk';
+  riskLevel: 'Critical' | 'Medium' | 'Low';
+  categories: CategoryScore[];
+  deductions: ScoreDeduction[];
+  weights: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+export function computeDetailedComplianceScore(
+  findings: { id?: string; category: string; severity: string; status: string; quoted_span?: string; source_code?: string; explanation?: string }[]
+): DetailedScoreResult {
+  const active = findings.filter((f) => f.status === 'open' || f.status === 'needs_human_check');
+
+  const weights = {
+    high: 25,
+    medium: 12,
+    low: 5,
+  };
+
+  const deductions: ScoreDeduction[] = [];
+  let totalDeduction = 0;
+
   for (const f of active) {
-    if (f.severity === 'high') deduction += 25;
-    else if (f.severity === 'medium') deduction += 12;
-    else deduction += 5;
+    let pts = weights.low;
+    if (f.severity === 'high') pts = weights.high;
+    else if (f.severity === 'medium') pts = weights.medium;
+
+    totalDeduction += pts;
+    deductions.push({
+      id: f.id || Math.random().toString(),
+      category: f.category,
+      severity: f.severity,
+      quoted_span: f.quoted_span || '',
+      source_code: f.source_code || 'RULE',
+      deduction: pts,
+      reason: f.explanation || `${f.severity.toUpperCase()} risk finding in ${f.category}`,
+    });
   }
 
-  return Math.max(0, Math.min(100, 100 - deduction));
+  const overallScore = Math.max(0, Math.min(100, 100 - totalDeduction));
+
+  let statusLabel: 'Ready to Publish' | 'Needs Fixes' | 'High Risk' = 'Ready to Publish';
+  let riskLevel: 'Critical' | 'Medium' | 'Low' = 'Low';
+
+  if (overallScore < 50 || active.some((f) => f.severity === 'high')) {
+    statusLabel = 'High Risk';
+    riskLevel = 'Critical';
+  } else if (overallScore < 85 || active.some((f) => f.severity === 'medium')) {
+    statusLabel = 'Needs Fixes';
+    riskLevel = 'Medium';
+  }
+
+  // Category dimensions
+  const categoryDefs = [
+    { name: 'Legal & Claims', keys: ['claim', 'fact'] },
+    { name: 'Brand Terminology', keys: ['terminology'] },
+    { name: 'Tone & Voice', keys: ['tone'] },
+    { name: 'Visual & A11y', keys: ['accessibility', 'visual'] },
+  ];
+
+  const categories: CategoryScore[] = categoryDefs.map((def) => {
+    const catFindings = findings.filter((f) => def.keys.includes(f.category));
+    const activeCatFindings = active.filter((f) => def.keys.includes(f.category));
+
+    let catDeduction = 0;
+    for (const f of activeCatFindings) {
+      if (f.severity === 'high') catDeduction += weights.high;
+      else if (f.severity === 'medium') catDeduction += weights.medium;
+      else catDeduction += weights.low;
+    }
+
+    return {
+      name: def.name,
+      categoryKey: def.keys[0],
+      score: Math.max(0, Math.min(100, 100 - catDeduction)),
+      activeCount: activeCatFindings.length,
+      totalCount: catFindings.length,
+    };
+  });
+
+  return {
+    overallScore,
+    statusLabel,
+    riskLevel,
+    categories,
+    deductions,
+    weights,
+  };
+}
+
+export function computeComplianceScore(findings: { severity: string; status: string }[]): number {
+  return computeDetailedComplianceScore(findings as any).overallScore;
 }
 
 export default function ComplianceScoreRing({

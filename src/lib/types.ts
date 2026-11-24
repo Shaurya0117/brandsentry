@@ -20,6 +20,7 @@ export interface Guideline {
   code: string; // e.g. "TONE-1", "LEGAL-1", "VIS-1"
   category: string;
   text: string;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -28,6 +29,7 @@ export interface Fact {
   id: string;
   code: string; // e.g. "F-12"
   statement: string;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -37,6 +39,7 @@ export interface Term {
   preferred: string;
   banned: string;
   note?: string;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -52,6 +55,9 @@ export interface ContentItem {
   image_alt?: string | null;
   text_color?: string | null;
   bg_color?: string | null;
+  compliance_score?: number;
+  risk_level?: 'Critical' | 'Medium' | 'Low';
+  open_findings_count?: number;
   created_at?: string;
   updated_at?: string;
 }

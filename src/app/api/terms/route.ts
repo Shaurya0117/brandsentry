@@ -36,18 +36,26 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, preferred, banned, note, actor, role } = body;
+    const { id, preferred, banned, note, is_active, actor, role } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Term id is required' }, { status: 400 });
     }
 
-    const updated = await updateTerm(id, { preferred, banned, note });
+    const updates: any = {};
+    if (preferred !== undefined) updates.preferred = preferred;
+    if (banned !== undefined) updates.banned = banned;
+    if (note !== undefined) updates.note = note;
+    if (is_active !== undefined) updates.is_active = is_active;
+
+    const updated = await updateTerm(id, updates);
 
     await addAuditLog({
       actor: actor || 'Admin',
       role: role || 'Admin',
-      action: `Updated brand term rule for "${preferred}"`,
+      action: is_active !== undefined
+        ? `${is_active ? 'Activated' : 'Deactivated'} brand terminology rule for "${preferred || id}"`
+        : `Updated brand term rule for "${preferred || id}"`,
     });
 
     return NextResponse.json(updated);

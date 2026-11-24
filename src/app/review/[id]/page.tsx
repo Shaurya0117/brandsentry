@@ -30,13 +30,18 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Printer,
+  Calculator,
+  FileText,
 } from 'lucide-react';
-import { ContentItem, ContentVersion, Finding, UserRole } from '@/lib/types';
+import { ContentItem, ContentVersion, Finding, UserRole, Comment, AuditLogEntry } from '@/lib/types';
 import { useRole } from '@/lib/context/role-context';
 import { useToast } from '@/components/Toast';
 import DiffViewer from '@/components/DiffViewer';
 import SourceModal from '@/components/SourceModal';
-import ComplianceScoreRing, { computeComplianceScore } from '@/components/ComplianceScoreRing';
+import ComplianceScoreRing, { computeComplianceScore, computeDetailedComplianceScore } from '@/components/ComplianceScoreRing';
+import ScoreExplainerModal from '@/components/ScoreExplainerModal';
+import AuditReportModal from '@/components/AuditReportModal';
 import StatusBadge from '@/components/StatusBadge';
 
 function ReviewContent() {
@@ -51,6 +56,8 @@ function ReviewContent() {
   const [versions, setVersions] = useState<ContentVersion[]>([]);
   const [currentVersion, setCurrentVersion] = useState<ContentVersion | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
@@ -58,11 +65,17 @@ function ReviewContent() {
   const [isCopied, setIsCopied] = useState(false);
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>({});
 
-  // Manual Edit Modal state
+  // Modals state
   const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
+  const [isScoreExplainerOpen, setIsScoreExplainerOpen] = useState(false);
+  const [isAuditReportOpen, setIsAuditReportOpen] = useState(false);
   const [manualEditText, setManualEditText] = useState('');
   const [isSubmittingFix, setIsSubmittingFix] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
+  const detailedScore = useMemo(() => {
+    return computeDetailedComplianceScore(findings);
+  }, [findings]);
 
   const fetchContentDetails = async () => {
     if (!id) return;
@@ -74,6 +87,8 @@ function ReviewContent() {
         setVersions(data.versions || [data.currentVersion]);
         setCurrentVersion(data.currentVersion);
         setFindings(data.findings || []);
+        setComments(data.comments || []);
+        setAuditLogs(data.auditLogs || []);
         if (data.currentVersion) {
           setManualEditText(data.currentVersion.body);
         }
@@ -95,6 +110,8 @@ function ReviewContent() {
           setVersions(cached.versions || (cached.currentVersion ? [cached.currentVersion] : []));
           setCurrentVersion(cached.currentVersion);
           setFindings(cached.findings || []);
+          setComments(cached.comments || []);
+          setAuditLogs(cached.auditLogs || []);
           if (cached.currentVersion) {
             setManualEditText(cached.currentVersion.body);
           }
@@ -677,9 +694,29 @@ function ReviewContent() {
 
         {/* Brand Compliance Score Ring & Header Actions */}
         <div className="flex flex-wrap items-center gap-4">
-          <ComplianceScoreRing score={complianceScore} size="md" showLabel={true} />
+          <div className="flex items-center gap-3">
+            <ComplianceScoreRing score={complianceScore} size="md" showLabel={true} />
+            <button
+              type="button"
+              onClick={() => setIsScoreExplainerOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-500/25 transition-all shadow-sm"
+              title="Inspect scoring weights, formula, and category breakdown"
+            >
+              <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Explain Score</span>
+            </button>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsAuditReportOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-semibold border border-white/[0.15] shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
+              title="Download or print certified compliance audit certificate"
+            >
+              <Printer className="w-3.5 h-3.5 text-indigo-300" />
+              <span>PDF Report</span>
+            </button>
+
             <button
               onClick={copyToClipboard}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium border border-white/[0.08] transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
@@ -707,6 +744,27 @@ function ReviewContent() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Category Scores Overview Bar (Priority 1) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#111113] border border-white/[0.08]">
+        {detailedScore.categories.map((cat) => (
+          <div key={cat.name} className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/[0.04] text-xs">
+            <span className="text-zinc-400 text-[11px] font-medium truncate">{cat.name}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`font-mono font-bold text-xs ${
+                cat.score >= 85 ? 'text-emerald-400' : cat.score >= 50 ? 'text-amber-400' : 'text-rose-400'
+              }`}>
+                {cat.score}%
+              </span>
+              {cat.activeCount > 0 ? (
+                <span className="text-[10px] font-mono text-rose-400">({cat.activeCount})</span>
+              ) : (
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Main Review Workbench */}
@@ -1155,6 +1213,28 @@ function ReviewContent() {
             </button>
           )}
 
+          {/* Explain score button */}
+          <button
+            type="button"
+            onClick={() => setIsScoreExplainerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/25 text-xs font-medium transition-all"
+            title="Inspect scoring weights, formula, and category breakdown"
+          >
+            <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Explain Score</span>
+          </button>
+
+          {/* Download PDF report button */}
+          <button
+            type="button"
+            onClick={() => setIsAuditReportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.15] text-xs font-semibold shadow-sm transition-all"
+            title="Print or export compliance audit certificate"
+          >
+            <Printer className="w-3.5 h-3.5 text-indigo-300" />
+            <span>PDF Report</span>
+          </button>
+
           {/* Submit for approval */}
           {content.status !== 'approved' && (
             <button
@@ -1220,6 +1300,28 @@ function ReviewContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Explainable Compliance Scoring Modal */}
+      <ScoreExplainerModal
+        isOpen={isScoreExplainerOpen}
+        onClose={() => setIsScoreExplainerOpen(false)}
+        scoreResult={detailedScore}
+        campaignTitle={content.title}
+      />
+
+      {/* Downloadable / Printable Audit Certificate Modal */}
+      {currentVersion && (
+        <AuditReportModal
+          isOpen={isAuditReportOpen}
+          onClose={() => setIsAuditReportOpen(false)}
+          content={content}
+          currentVersion={currentVersion}
+          scoreResult={detailedScore}
+          findings={findings}
+          comments={comments}
+          auditLogs={auditLogs}
+        />
       )}
     </div>
   );

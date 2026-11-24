@@ -25,12 +25,17 @@ function preserveCase(original: string, replacement: string): string {
 
 export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'version_id' | 'created_at'>[] {
   const findings: Omit<Finding, 'id' | 'version_id' | 'created_at'>[] = [];
-  const { content, terms, imageUrl, imageAlt, textColor, bgColor } = input;
+  const { content, terms, guidelines, imageUrl, imageAlt, textColor, bgColor } = input;
 
   if (!content) return findings;
 
+  const inactiveGuidelineCodes = new Set(
+    (guidelines || []).filter((g) => g.is_active === false).map((g) => g.code.trim().toUpperCase())
+  );
+
   // 1. Banned Terms Check with smart case adaptation
-  for (const term of terms) {
+  const activeTerms = (terms || []).filter((t) => t.is_active !== false);
+  for (const term of activeTerms) {
     if (!term.banned || !term.banned.trim()) continue;
 
     const bannedPhrase = term.banned.trim();
@@ -94,6 +99,7 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
   ];
 
   for (const pattern of absoluteClaimPatterns) {
+    if (inactiveGuidelineCodes.has(pattern.source_code.toUpperCase())) continue;
     let match: RegExpExecArray | null;
     while ((match = pattern.regex.exec(content)) !== null) {
       const quotedSpan = match[0];
@@ -119,7 +125,7 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
   }
 
   // 3. Visual & Media Accessibility Checks
-  if (imageUrl && imageUrl.trim()) {
+  if (imageUrl && imageUrl.trim() && !inactiveGuidelineCodes.has('VIS-2')) {
     if (!imageAlt || !imageAlt.trim()) {
       findings.push({
         category: 'accessibility',
@@ -138,7 +144,7 @@ export function runRuleEngine(input: RuleEngineInput): Omit<Finding, 'id' | 'ver
   }
 
   // 4. Color Contrast Check (WCAG 2.1 AA)
-  if (textColor && bgColor) {
+  if (textColor && bgColor && !inactiveGuidelineCodes.has('VIS-1')) {
     const contrast = calculateContrastRatio(textColor, bgColor);
     if (contrast && !contrast.isAccessibleAA) {
       findings.push({

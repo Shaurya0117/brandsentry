@@ -36,18 +36,26 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, code, category, text, actor, role } = body;
+    const { id, code, category, text, is_active, actor, role } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Guideline id is required' }, { status: 400 });
     }
 
-    const updated = await updateGuideline(id, { code, category, text });
+    const updates: any = {};
+    if (code !== undefined) updates.code = code;
+    if (category !== undefined) updates.category = category;
+    if (text !== undefined) updates.text = text;
+    if (is_active !== undefined) updates.is_active = is_active;
+
+    const updated = await updateGuideline(id, updates);
 
     await addAuditLog({
       actor: actor || 'Admin',
       role: role || 'Admin',
-      action: `Updated brand guideline ${code || id}`,
+      action: is_active !== undefined
+        ? `${is_active ? 'Activated' : 'Deactivated'} brand guideline ${code || id}`
+        : `Updated brand guideline ${code || id}`,
     });
 
     return NextResponse.json(updated);
