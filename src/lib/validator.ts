@@ -23,7 +23,7 @@ export function validateAndMergeFindings(input: ValidatorInput): Omit<Finding, '
   const validatedAiFindings: Omit<Finding, 'id' | 'version_id' | 'created_at'>[] = [];
 
   for (const finding of aiFindings) {
-    let span = finding.quoted_span.trim();
+    const span = finding.quoted_span.trim();
     if (!span) continue;
 
     // Check if span is in content
