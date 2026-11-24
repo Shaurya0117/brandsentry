@@ -154,8 +154,8 @@ html:not(.dark) {
   }
 
   /* Typography Contrast */
-  .text-white,
-  .text-zinc-100 {
+  .text-white:not(.text-transparent),
+  .text-zinc-100:not(.text-transparent) {
     color: #0f172a !important;
   }
 
