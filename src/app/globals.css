@@ -3,19 +3,21 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --card: #111113;
-  --card-border: rgba(255, 255, 255, 0.08);
-  --accent: #3b82f6;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-border: #e2e8f0;
+  --card-border-hover: #cbd5e1;
+  --accent: #4338ca;
 }
 
-html.light {
-  --background: #f8fafc;
-  --foreground: #09090b;
-  --card: #ffffff;
-  --card-border: rgba(0, 0, 0, 0.08);
-  --accent: #2563eb;
+html.dark {
+  --background: #0b0f19;
+  --foreground: #f8fafc;
+  --card: #121b2d;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-border-hover: rgba(255, 255, 255, 0.16);
+  --accent: #6366f1;
 }
 
 @theme inline {
@@ -45,30 +47,30 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 9999px;
 }
 
-html.light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(148, 163, 184, 0.5);
 }
 
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Subtle dot-grid ambient background */
 .bg-grid-pattern {
   background-size: 24px 24px;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
 }
 
-html.light .bg-grid-pattern {
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+html.dark .bg-grid-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
 }
 
 /* Top hairline highlight for cards */
@@ -82,21 +84,213 @@ html.light .bg-grid-pattern {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(67, 56, 202, 0.2), transparent);
   pointer-events: none;
 }
 
-html.light .top-highlight::before {
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+html.dark .top-highlight::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
 }
 
 /* Focus styles for keyboard accessibility */
 :focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline: 2px solid #4338ca;
   outline-offset: 2px;
 }
 
-html.light :focus-visible {
-  outline: 2px solid rgba(0, 0, 0, 0.6);
+html.dark :focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
   outline-offset: 2px;
+}
+
+/* ==============================================================================
+   BrandSentry High-Trust Enterprise Light Mode Styles (Default)
+   ============================================================================== */
+
+html.light,
+html:not(.dark) {
+  /* Cards & primary surface containers */
+  .bg-\[\#111113\],
+  .bg-\[\#141417\],
+  .bg-\[\#18181b\],
+  .bg-\[\#151518\] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04) !important;
+  }
+
+  /* Sub-containers & panels */
+  .bg-\[\#09090b\] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Navigation Header */
+  header {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03) !important;
+  }
+
+  /* Hero command card on homepage */
+  .bg-gradient-to-b.from-\[\#141417\].via-\[\#0f0f11\].to-\[\#09090b\] {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #eef2ff 100%) !important;
+    border-color: #c7d2fe !important;
+    box-shadow: 0 10px 25px -5px rgba(67, 56, 202, 0.06), 0 8px 10px -6px rgba(67, 56, 202, 0.04) !important;
+  }
+
+  /* Universal Borders */
+  .border-white\/\[0\.08\],
+  .border-white\/\[0\.06\],
+  .border-white\/\[0\.1\],
+  .border-white\/\[0\.12\],
+  .border-white\/\[0\.14\],
+  .border-white\/\[0\.15\],
+  .border-white\/\[0\.2\],
+  .border-white\/\[0\.25\],
+  .border-zinc-700,
+  .border-zinc-800 {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Typography Contrast */
+  .text-white,
+  .text-zinc-100 {
+    color: #0f172a !important;
+  }
+
+  .text-zinc-200,
+  .text-zinc-300 {
+    color: #1e293b !important;
+  }
+
+  .text-zinc-400 {
+    color: #475569 !important;
+  }
+
+  .text-zinc-500 {
+    color: #64748b !important;
+  }
+
+  /* Secondary Buttons & Pills */
+  .bg-zinc-900,
+  .bg-zinc-900\/70,
+  .bg-zinc-900\/60,
+  .bg-zinc-850,
+  .bg-zinc-800 {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .bg-zinc-900:hover,
+  .bg-zinc-800:hover {
+    background-color: #e2e8f0 !important;
+  }
+
+  .bg-white\/\[0\.04\],
+  .bg-white\/\[0\.03\],
+  .bg-white\/\[0\.06\],
+  .bg-white\/\[0\.08\] {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Primary white buttons become high-contrast executive dark buttons */
+  a.bg-white,
+  button.bg-white {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.08) !important;
+  }
+  a.bg-white:hover,
+  button.bg-white:hover {
+    background-color: #1e293b !important;
+  }
+  a.bg-white svg,
+  button.bg-white svg {
+    color: #ffffff !important;
+  }
+
+  /* Form inputs, textareas, selects */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  /* High-Contrast Badges */
+  .bg-amber-500\/10,
+  .bg-amber-500\/15 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+  }
+
+  .bg-emerald-500\/10,
+  .bg-emerald-500\/20,
+  .bg-emerald-500\/15 {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+  }
+
+  .bg-rose-500\/10,
+  .bg-rose-500\/20 {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #be123c !important;
+  }
+
+  .text-amber-300,
+  .text-amber-400 {
+    color: #b45309 !important;
+  }
+
+  .text-emerald-300,
+  .text-emerald-400 {
+    color: #047857 !important;
+  }
+
+  .text-rose-300,
+  .text-rose-400 {
+    color: #be123c !important;
+  }
+
+  /* Score Ring background track */
+  circle.text-white\/\[0\.08\] {
+    color: #e2e8f0 !important;
+    stroke: #e2e8f0 !important;
+  }
+}
+
+/* ==============================================================================
+   BrandSentry Refined Executive Dark Mode Styles (Sleek Slate, Not Pitch Black)
+   ============================================================================== */
+
+html.dark {
+  .bg-\[\#111113\],
+  .bg-\[\#141417\],
+  .bg-\[\#151518\] {
+    background-color: #121b2d !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+  }
+
+  .bg-\[\#09090b\] {
+    background-color: #0d1322 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  header {
+    background-color: rgba(11, 15, 25, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
 }

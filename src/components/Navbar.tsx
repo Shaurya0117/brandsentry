@@ -103,14 +103,14 @@ export default function Navbar() {
         {/* Brand identity */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg">
-            <div className="w-7 h-7 rounded-lg bg-zinc-900 border border-white/[0.12] flex items-center justify-center shadow-sm group-hover:border-white/30 transition-all">
-              <Shield className="w-3.5 h-3.5 text-zinc-100" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-all">
+              <Shield className="w-3.5 h-3.5 text-white" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-zinc-100 tracking-tight">
+              <span className="font-bold text-sm text-slate-900 dark:text-zinc-100 tracking-tight">
                 BrandSentry
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5 py-0.2 rounded bg-white/[0.04] border border-white/[0.06] hidden xs:inline-block">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-700 dark:text-zinc-400 px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-white/[0.04] border border-indigo-200 dark:border-white/[0.06] hidden xs:inline-block">
                 Governance
               </span>
             </div>
